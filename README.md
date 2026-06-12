@@ -1,8 +1,8 @@
 # DesktopPet
 
-一个基于 **Python 3.9-3.12 / PyQt5 / SQLite / PyYAML** 的桌面宠物背单词应用。它会在桌面上显示一个可拖拽的透明宠物，通过气泡提醒推送单词，并用简化版间隔重复算法记录学习进度。
+一个基于 **Python 3.9+ / PyQt5 / SQLite / PyYAML** 的桌面宠物背单词应用。它会在桌面上显示一个可拖拽的透明宠物，通过气泡提醒推送单词，并用简化版间隔重复算法记录学习进度。
 
-![Python](https://img.shields.io/badge/Python-3.9--3.12-blue)
+![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
 ![PyQt5](https://img.shields.io/badge/GUI-PyQt5-green)
 ![SQLite](https://img.shields.io/badge/Storage-SQLite-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
@@ -50,7 +50,7 @@
 
 ## Tech Stack
 
-- Python 3.9-3.12 recommended
+- Python 3.9+，推荐 3.9-3.12
 - PyQt5
 - SQLite
 - PyYAML
@@ -106,7 +106,7 @@ run.bat
 
 - 检查项目根目录下的 `.venv`
 - 如果 `.venv` 不存在或损坏，自动重建
-- 优先使用 Python 3.12、3.11、3.10 或 3.9 创建环境
+- 优先使用 Python 3.12、3.11、3.10 或 3.9 创建环境；只有更新版本时也会继续尝试
 - 安装缺失依赖；默认源失败时会自动尝试清华 PyPI 镜像
 - 使用项目自己的 `.venv` 启动程序
 
@@ -145,7 +145,7 @@ Linux 桌面环境需要可用的图形会话和 Qt 托盘支持。无桌面环�
 
 ## Environment Troubleshooting
 
-- 如果提示找不到 Python，请安装 Python 3.9-3.12，并在 Windows 安装时勾选 `Add python.exe to PATH`。
+- 如果提示找不到 Python，请安装 Python 3.9+，并在 Windows 安装时勾选 `Add python.exe to PATH`。
 - 如果依赖安装失败，先运行 `run_debug.bat` 查看具体错误；脚本会自动尝试一次清华 PyPI 镜像。
 - 如果 PyQt5 安装失败，通常是 Python 版本过新、网络源不可用或 pip 被代理/防火墙拦截。
 - 如果只是想替换本地宠物图片，修改 `resources/pets/pet.png` 即可；仓库默认图片会保持不变，除非主动取消本地的 `skip-worktree` 标记并提交。

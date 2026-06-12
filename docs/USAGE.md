@@ -18,8 +18,10 @@ The one-click scripts are for Windows. They create a project-local `.venv`,
 install `requirements.txt`, and retry dependency installation with the Tsinghua
 PyPI mirror if the default source fails.
 
-Recommended Python versions are 3.9 through 3.12. If Python is missing, install
-it from python.org and enable `Add python.exe to PATH`.
+Python 3.9+ is required. Versions 3.9 through 3.12 are preferred for PyQt5
+compatibility, but the script will continue with newer Python versions when
+that is all the machine has. If Python is missing, install it from python.org
+and enable `Add python.exe to PATH`.
 
 On Linux/macOS, create the environment manually:
 

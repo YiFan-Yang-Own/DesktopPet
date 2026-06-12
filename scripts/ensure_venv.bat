@@ -1,5 +1,5 @@
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 
 rem Ensure DesktopPet uses the project-local virtual environment.
 rem Usage:
@@ -31,7 +31,7 @@ if not exist "%PYTHON_EXE%" (
     if errorlevel 1 exit /b 1
     call :check_base_python_version
     if errorlevel 1 exit /b 1
-    "%BASE_PYTHON%" -m venv "%VENV_DIR%"
+    call !BASE_PYTHON! -m venv "%VENV_DIR%"
     if errorlevel 1 (
         echo [ERROR] Failed to create .venv.
         echo [HINT] Install Python 3.9+ and make sure python is available in PATH.
@@ -94,12 +94,16 @@ echo [HINT] On Windows, enable "Add python.exe to PATH" during installation.
 exit /b 1
 
 :check_base_python_version
-%BASE_PYTHON% -c "import sys; raise SystemExit(0 if (3, 9) <= sys.version_info < (3, 13) else 1)" >nul 2>&1
+%BASE_PYTHON% -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 9) else 1)" >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python 3.9 - 3.12 is required.
+    echo [ERROR] Python 3.9+ is required.
     %BASE_PYTHON% --version
-    echo [HINT] Install Python 3.9 - 3.12 for the best compatibility.
+    echo [HINT] Install Python 3.9 - 3.12 for the best compatibility, or use a newer version if PyQt5 supports it.
     exit /b 1
+)
+%BASE_PYTHON% -c "import sys; raise SystemExit(0 if sys.version_info < (3, 13) else 1)" >nul 2>&1
+if errorlevel 1 (
+    echo [WARN] Python 3.13+ detected. Continuing, but Python 3.9 - 3.12 is recommended for PyQt5 compatibility.
 )
 exit /b 0
 
