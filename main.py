@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import msvcrt
 import sys
 from pathlib import Path
 from typing import Optional, Type
@@ -40,7 +39,14 @@ class SingleInstanceGuard:
             lock_file.flush()
         lock_file.seek(0)
         try:
-            msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+            if sys.platform == "win32":
+                import msvcrt
+
+                msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError:
             lock_file.close()
             return False
@@ -52,7 +58,14 @@ class SingleInstanceGuard:
         """Release the single-instance lock if this process owns it."""
         if self._lock_file is not None:
             self._lock_file.seek(0)
-            msvcrt.locking(self._lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+            if sys.platform == "win32":
+                import msvcrt
+
+                msvcrt.locking(self._lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+
+                fcntl.flock(self._lock_file.fileno(), fcntl.LOCK_UN)
             self._lock_file.close()
             self._lock_file = None
 
