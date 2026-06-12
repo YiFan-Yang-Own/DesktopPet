@@ -273,13 +273,6 @@ clean.bat
 
 ## GitHub Notes
 
-仓库已经包含 `.gitignore` 和 `.gitattributes`：
-
-- `.venv/`、`build/`、`dist/`、`__pycache__/` 不应提交
-- `data/user_data.db` 是本机学习记录，不应提交
-- `logs/` 是运行日志，不应提交
-- `resources/pets/.gitkeep` 和 `resources/icons/.gitkeep` 用于保留空资源目录
-- `.github/workflows/python-check.yml` 会在 GitHub Actions 中执行基础编译检查
 
 More docs:
 
