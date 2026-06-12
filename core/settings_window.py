@@ -47,7 +47,7 @@ class SettingsWindow(QDialog):
             60,
             int(self.config_manager.get("bubble_duration_seconds", 5)),
         )
-        self.pet_size_spin = self._spin(120, 360, int(self.config_manager.get("pet.size", 200)))
+        self.pet_size_spin = self._spin(120, 880, int(self.config_manager.get("pet.size", 200)))
         self.startup_reminder_check = QCheckBox("启动后自动弹出一个单词")
         self.startup_reminder_check.setChecked(
             bool(self.config_manager.get("startup_reminder", True))
