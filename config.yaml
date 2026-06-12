@@ -1,0 +1,14 @@
+reminder_interval_minutes: 1
+reminder_interval_seconds: 10
+word_lib: cet4.json
+daily_goal: 20
+startup_reminder: true
+bubble_duration_seconds: 5
+pet:
+  size: 200
+  x: null
+  y: null
+quiet_hours:
+  enabled: true
+  start: '22:00'
+  end: 08:00
