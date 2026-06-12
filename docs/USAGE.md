@@ -14,6 +14,22 @@ If the app fails to start, double-click:
 run_debug.bat
 ```
 
+The one-click scripts are for Windows. They create a project-local `.venv`,
+install `requirements.txt`, and retry dependency installation with the Tsinghua
+PyPI mirror if the default source fails.
+
+Recommended Python versions are 3.9 through 3.12. If Python is missing, install
+it from python.org and enable `Add python.exe to PATH`.
+
+On Linux/macOS, create the environment manually:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python main.py
+```
+
 ## Pet Controls
 
 - Left-click the pet to show a word immediately.

@@ -1,8 +1,8 @@
 # DesktopPet
 
-一个基于 **Python 3.9+ / PyQt5 / SQLite / PyYAML** 的桌面宠物背单词应用。它会在桌面上显示一个可拖拽的透明宠物，通过气泡提醒推送单词，并用简化版间隔重复算法记录学习进度。
+一个基于 **Python 3.9-3.12 / PyQt5 / SQLite / PyYAML** 的桌面宠物背单词应用。它会在桌面上显示一个可拖拽的透明宠物，通过气泡提醒推送单词，并用简化版间隔重复算法记录学习进度。
 
-![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
+![Python](https://img.shields.io/badge/Python-3.9--3.12-blue)
 ![PyQt5](https://img.shields.io/badge/GUI-PyQt5-green)
 ![SQLite](https://img.shields.io/badge/Storage-SQLite-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
@@ -10,7 +10,7 @@
 ## Features
 
 - 透明、无边框、置顶的桌面宠物窗口
-- 支持 GIF 宠物动画，默认读取 `resources/pets/pet.gif`
+- 支持 GIF 宠物动画，也支持 PNG/JPG 静态宠物图
 - 鼠标拖拽移动宠物，释放后保持位置
 - 单词气泡提醒，包含单词、音标、释义、例句和操作按钮
 - “记住了 / 再记一次”学习反馈记录
@@ -50,7 +50,7 @@
 
 ## Tech Stack
 
-- Python 3.9+
+- Python 3.9-3.12 recommended
 - PyQt5
 - SQLite
 - PyYAML
@@ -66,7 +66,7 @@ DesktopPet/
 ├── README.md
 ├── resources/
 │   ├── pets/
-│   │   └── pet.gif
+│   │   └── pet.png
 │   └── icons/
 │       └── icon.png
 ├── core/
@@ -106,7 +106,8 @@ run.bat
 
 - 检查项目根目录下的 `.venv`
 - 如果 `.venv` 不存在或损坏，自动重建
-- 安装缺失依赖
+- 优先使用 Python 3.12、3.11、3.10 或 3.9 创建环境
+- 安装缺失依赖；默认源失败时会自动尝试清华 PyPI 镜像
 - 使用项目自己的 `.venv` 启动程序
 
 如果启动失败，双击：
@@ -117,7 +118,7 @@ run_debug.bat
 
 它会保留控制台窗口，方便查看错误信息。
 
-### Manual Run
+### Manual Run on Windows
 
 如果你想手动运行：
 
@@ -128,6 +129,26 @@ scripts\ensure_venv.bat
 ```
 
 运行后，宠物会出现在屏幕右下角。右键系统托盘图标可以打开菜单。
+
+### Manual Run on Linux/macOS
+
+Linux/macOS 不能直接运行 `.bat` 脚本，可以手动创建虚拟环境：
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python main.py
+```
+
+Linux 桌面环境需要可用的图形会话和 Qt 托盘支持。无桌面环境的服务器或纯终端环境无法显示桌宠窗口。
+
+## Environment Troubleshooting
+
+- 如果提示找不到 Python，请安装 Python 3.9-3.12，并在 Windows 安装时勾选 `Add python.exe to PATH`。
+- 如果依赖安装失败，先运行 `run_debug.bat` 查看具体错误；脚本会自动尝试一次清华 PyPI 镜像。
+- 如果 PyQt5 安装失败，通常是 Python 版本过新、网络源不可用或 pip 被代理/防火墙拦截。
+- 如果只是想替换本地宠物图片，修改 `resources/pets/pet.png` 即可；仓库默认图片会保持不变，除非主动取消本地的 `skip-worktree` 标记并提交。
 
 ## Configuration
 
