@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import (
 
 from core.config_manager import ConfigManager
 from core.interval_dialog import IntervalDialog
+from core import startup_manager
 
 
 class SettingsWindow(QDialog):
@@ -77,6 +78,9 @@ class SettingsWindow(QDialog):
         self.startup_reminder_check.setChecked(
             bool(self.config_manager.get("startup_reminder", True))
         )
+        self.launch_at_login_check = QCheckBox("开机自动启动")
+        self.launch_at_login_check.setChecked(startup_manager.is_enabled())
+        self.launch_at_login_check.setEnabled(startup_manager.is_supported())
         self.quiet_enabled_check = QCheckBox("启用夜间免打扰")
         self.quiet_enabled_check.setChecked(
             bool(self.config_manager.get("quiet_hours.enabled", True))
@@ -149,6 +153,7 @@ class SettingsWindow(QDialog):
         reminder_form.addRow("每日目标", self.daily_goal_spin)
         reminder_form.addRow("气泡停留秒数", self.bubble_duration_spin)
         reminder_form.addRow("", self.startup_reminder_check)
+        reminder_form.addRow("", self.launch_at_login_check)
         root.addWidget(reminder_group)
 
         pet_group = QGroupBox("桌宠")
@@ -264,6 +269,7 @@ class SettingsWindow(QDialog):
         self.config_manager.set("pet.always_on_top", self.pet_always_on_top_check.isChecked())
         self.config_manager.set("pet.click_to_review", self.pet_click_to_review_check.isChecked())
         self.config_manager.set("startup_reminder", self.startup_reminder_check.isChecked())
+        startup_manager.set_enabled(self.launch_at_login_check.isChecked(), self.base_dir)
         self.config_manager.set("quiet_hours.enabled", self.quiet_enabled_check.isChecked())
         self.config_manager.set("quiet_hours.start", self.quiet_start_edit.time().toString("HH:mm"))
         self.config_manager.set("quiet_hours.end", self.quiet_end_edit.time().toString("HH:mm"))
