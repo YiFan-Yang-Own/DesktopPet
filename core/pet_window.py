@@ -184,6 +184,7 @@ class PetWindow(QMainWindow):
             word_info,
             self.geometry(),
             int(self.config_manager.get("bubble_duration_seconds", 5)),
+            scale=self._bubble_scale(),
         )
         self.current_bubble.result_selected.connect(self.bubble_result.emit)
         self.current_bubble.show()
@@ -234,3 +235,7 @@ class PetWindow(QMainWindow):
         """Persist the current pet position."""
         self.config_manager.set("pet.x", self.x())
         self.config_manager.set("pet.y", self.y())
+
+    def _bubble_scale(self) -> float:
+        """Return the bubble scale derived from the configured pet size."""
+        return max(0.75, min(self.pet_size / 200, 1.6))

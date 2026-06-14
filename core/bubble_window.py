@@ -36,12 +36,14 @@ class BubbleWindow(QWidget):
         word_info: Dict[str, object],
         pet_rect: QRect,
         auto_close_seconds: int = 5,
+        scale: float = 1.0,
     ) -> None:
         """Create a bubble for a single word and position it near the pet."""
         super().__init__()
         self.word_info = word_info
         self.pet_rect = pet_rect
         self.auto_close_seconds = max(int(auto_close_seconds), 1)
+        self.scale = max(0.75, min(float(scale), 1.6))
         self._fade_animation: Optional[QPropertyAnimation] = None
 
         self.setWindowFlags(
@@ -51,7 +53,9 @@ class BubbleWindow(QWidget):
             | Qt.NoDropShadowWindowHint
         )
         self.setAttribute(Qt.WA_TranslucentBackground, True)
-        self.setMaximumWidth(380)
+        self.min_width = self._scaled(280)
+        self.max_width = self._scaled(380)
+        self.setMaximumWidth(self.max_width)
 
         self._build_ui()
         self.adjustSize()
@@ -64,64 +68,69 @@ class BubbleWindow(QWidget):
     def _build_ui(self) -> None:
         """Build labels and buttons inside the custom-painted bubble."""
         container = QVBoxLayout(self)
-        container.setContentsMargins(20, 16, 20, 26)
-        container.setSpacing(8)
+        container.setContentsMargins(
+            self._scaled(20),
+            self._scaled(16),
+            self._scaled(20),
+            self._scaled(26),
+        )
+        container.setSpacing(self._scaled(8))
 
         header_layout = QHBoxLayout()
         tag_label = QLabel(str(self.word_info.get("level", "CET4")))
         tag_label.setAlignment(Qt.AlignCenter)
         tag_label.setStyleSheet(
-            """
+            f"""
             QLabel {
                 background: #e0f2fe;
                 color: #0369a1;
                 border-radius: 5px;
-                padding: 3px 8px;
-                font-size: 11px;
+                padding: {self._scaled(3)}px {self._scaled(8)}px;
+                font-size: {self._scaled(11)}px;
                 font-weight: 700;
             }
             """
         )
         status_label = QLabel(str(self.word_info.get("progress_text", "今日继续加油")))
-        status_label.setStyleSheet("color: #64748b; font-size: 12px;")
+        status_label.setStyleSheet(f"color: #64748b; font-size: {self._scaled(12)}px;")
         header_layout.addWidget(tag_label)
         header_layout.addStretch(1)
         header_layout.addWidget(status_label)
 
         word_label = QLabel(str(self.word_info.get("word", "")))
         word_font = QFont()
-        word_font.setPointSize(20)
+        word_font.setPointSize(self._scaled(20))
         word_font.setBold(True)
         word_label.setFont(word_font)
         word_label.setStyleSheet("color: #111827;")
 
         phonetic_label = QLabel(str(self.word_info.get("phonetic", "")))
-        phonetic_label.setStyleSheet("color: #2563eb; font-size: 13px;")
+        phonetic_label.setStyleSheet(f"color: #2563eb; font-size: {self._scaled(13)}px;")
 
         meaning_label = QLabel(str(self.word_info.get("meaning", "")))
         meaning_label.setWordWrap(True)
         meaning_label.setStyleSheet(
-            "color: #1f2937; font-size: 14px; font-weight: 600;"
+            f"color: #1f2937; font-size: {self._scaled(14)}px; font-weight: 600;"
         )
 
         example_label = QLabel(str(self.word_info.get("example", "")))
         example_label.setWordWrap(True)
         example_label.setStyleSheet(
-            """
+            f"""
             QLabel {
                 color: #64748b;
-                font-size: 12px;
+                font-size: {self._scaled(12)}px;
                 background: #f8fafc;
                 border: 1px solid #e5e7eb;
                 border-radius: 6px;
-                padding: 8px;
+                padding: {self._scaled(8)}px;
             }
             """
         )
 
         progress_bar = QProgressBar()
         progress_bar.setTextVisible(False)
-        progress_bar.setFixedHeight(7)
+        progress_bar.setFixedHeight(self._scaled(7))
         progress_bar.setRange(0, 100)
         progress_bar.setValue(int(self.word_info.get("progress_percent", 0)))
         progress_bar.setStyleSheet(
@@ -139,19 +148,19 @@ class BubbleWindow(QWidget):
         )
 
         button_layout = QHBoxLayout()
-        button_layout.setSpacing(8)
+        button_layout.setSpacing(self._scaled(8))
         remember_button = QPushButton("记住了")
         again_button = QPushButton("再记一次")
         for button in (remember_button, again_button):
             button.setCursor(Qt.PointingHandCursor)
-            button.setMinimumHeight(28)
+            button.setMinimumHeight(self._scaled(28))
             button.setStyleSheet(
-                """
+                f"""
                 QPushButton {
                     background: #ffffff;
                     border: 1px solid #d1d5db;
                     border-radius: 6px;
-                    padding: 6px 14px;
+                    padding: {self._scaled(6)}px {self._scaled(14)}px;
                     color: #111827;
                     font-weight: 600;
                 }
@@ -161,12 +170,12 @@ class BubbleWindow(QWidget):
                 """
             )
         remember_button.setStyleSheet(
-            """
+            f"""
             QPushButton {
                 background: #2563eb;
                 border: 1px solid #2563eb;
                 border-radius: 6px;
-                padding: 6px 14px;
+                padding: {self._scaled(6)}px {self._scaled(14)}px;
                 color: #ffffff;
                 font-weight: 700;
             }
@@ -189,7 +198,7 @@ class BubbleWindow(QWidget):
         container.addWidget(meaning_label)
         container.addWidget(example_label)
         container.addWidget(progress_bar)
-        container.addSpacing(4)
+        container.addSpacing(self._scaled(4))
         container.addLayout(button_layout)
 
     def paintEvent(self, event: object) -> None:
@@ -200,7 +209,7 @@ class BubbleWindow(QWidget):
 
         width = self.width()
         height = self.height()
-        triangle_height = 10
+        triangle_height = self._scaled(10)
         body_rect = QRect(1, 1, width - 2, height - triangle_height - 2)
 
         gradient = QLinearGradient(0, 0, 0, body_rect.height())
@@ -209,14 +218,15 @@ class BubbleWindow(QWidget):
         painter.setBrush(gradient)
 
         path = QPainterPath()
-        path.addRoundedRect(QRectF(body_rect), 12, 12)
+        radius = self._scaled(12)
+        path.addRoundedRect(QRectF(body_rect), radius, radius)
         painter.drawPath(path)
 
-        triangle_center = min(max(28, width // 2), width - 28)
+        triangle_center = min(max(self._scaled(28), width // 2), width - self._scaled(28))
         triangle = QPolygon(
             [
-                QPoint(triangle_center - 9, height - triangle_height - 1),
-                QPoint(triangle_center + 9, height - triangle_height - 1),
+                QPoint(triangle_center - self._scaled(9), height - triangle_height - 1),
+                QPoint(triangle_center + self._scaled(9), height - triangle_height - 1),
                 QPoint(triangle_center, height - 1),
             ]
         )
@@ -253,13 +263,13 @@ class BubbleWindow(QWidget):
             return
 
         available = screen.availableGeometry()
-        margin = 8
-        bubble_width = min(max(self.sizeHint().width(), 280), 380)
+        margin = self._scaled(8)
+        bubble_width = min(max(self.sizeHint().width(), self.min_width), self.max_width)
         bubble_height = self.sizeHint().height()
         self.resize(bubble_width, bubble_height)
 
         x = self.pet_rect.right() + margin
-        y = self.pet_rect.top() + 10
+        y = self.pet_rect.top() + self._scaled(10)
 
         if x + bubble_width > available.right():
             x = self.pet_rect.left() - bubble_width - margin
@@ -271,3 +281,7 @@ class BubbleWindow(QWidget):
             x = available.left() + margin
 
         self.move(x, y)
+
+    def _scaled(self, value: int) -> int:
+        """Scale a pixel or font value according to pet size."""
+        return max(1, int(round(value * self.scale)))
