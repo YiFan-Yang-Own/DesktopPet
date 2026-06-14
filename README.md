@@ -186,6 +186,8 @@ quiet_hours:
 
 修改配置也可以通过托盘菜单完成，程序会自动写入 `config.local.yaml`，不会改动仓库里的默认配置。
 
+开机自启在 Windows 下可通过设置窗口启用。源码运行时会启动项目的 `run.bat`；打包后的 exe 运行时会启动当前 `DesktopPet.exe`。
+
 ## Word Library
 
 内置词库位于：

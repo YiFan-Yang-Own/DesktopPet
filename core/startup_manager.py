@@ -51,16 +51,29 @@ def set_enabled(enabled: bool, project_dir: Path) -> None:
         return
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    run_bat = project_dir / "run.bat"
+    working_dir, launch_target = _launch_target(project_dir)
     path.write_text(
         "\n".join(
             [
                 "@echo off",
-                f'cd /d "{project_dir}"',
-                f'start "" "{run_bat}"',
+                f'cd /d "{working_dir}"',
+                f'start "" "{launch_target}"',
                 "exit /b 0",
                 "",
             ]
         ),
         encoding="utf-8",
     )
+
+
+def _launch_target(project_dir: Path) -> tuple[Path, Path]:
+    """Return the working directory and executable/script to launch."""
+    if getattr(sys, "frozen", False):
+        executable = Path(sys.executable).resolve()
+        return executable.parent, executable
+
+    run_bat = project_dir / "run.bat"
+    if run_bat.exists():
+        return project_dir, run_bat
+
+    return project_dir, Path(sys.executable).resolve()
