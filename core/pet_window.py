@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 from typing import Dict, Optional
 
-from PyQt5.QtCore import QPoint, QRect, Qt, pyqtSignal
+from PyQt5.QtCore import QPoint, QRect, Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QColor, QCursor, QLinearGradient, QMovie, QPainter, QPen, QPixmap
 from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow
 
@@ -31,6 +31,9 @@ class PetWindow(QMainWindow):
         self.drag_position: Optional[QPoint] = None
         self.press_position: Optional[QPoint] = None
         self.current_bubble: Optional[BubbleWindow] = None
+        self.pet_movie: Optional[QMovie] = None
+        self.pet_state = "happy"
+        self._state_generation = 0
 
         self._apply_window_flags()
         self.setAttribute(Qt.WA_TranslucentBackground, True)
@@ -41,50 +44,79 @@ class PetWindow(QMainWindow):
         self.pet_label = QLabel(self)
         self.pet_label.setAlignment(Qt.AlignCenter)
         self.pet_label.setGeometry(0, 0, self.pet_size, self.pet_size)
-        self._load_pet_animation()
+        self._load_pet_animation(self.pet_state)
         self._restore_position()
 
-    def _load_pet_animation(self) -> None:
+    def _load_pet_animation(self, state: Optional[str] = None) -> None:
         """Load a pet asset when present, otherwise render a friendly fallback."""
         pet_dir = self.base_dir / "resources" / "pets"
-        for image_name in (
+        for image_name in self._pet_asset_candidates(state):
+            image_path = pet_dir / image_name
+            if image_path.exists() and self._apply_pet_asset(image_path):
+                return
+
+        self._draw_fallback_pet()
+
+    def _pet_asset_candidates(self, state: Optional[str]) -> tuple[str, ...]:
+        """Return pet asset names in display priority order."""
+        local_assets = (
             "local_pet.gif",
             "local_pet.png",
             "local_pet.jpg",
             "local_pet.jpeg",
+        )
+        default_assets = (
             "pet.gif",
             "pet.png",
             "pet.jpg",
             "pet.jpeg",
-        ):
-            image_path = pet_dir / image_name
-            if not image_path.exists():
-                continue
-            if image_path.suffix.lower() == ".gif":
-                movie = QMovie(str(image_path))
-                movie.setScaledSize(self.size())
-                self.pet_label.setMovie(movie)
-                movie.start()
-                LOGGER.info("Loaded pet animation from %s", image_path)
-                return
-            pixmap = QPixmap(str(image_path))
-            if not pixmap.isNull():
-                scaled = pixmap.scaled(
-                    self.size(),
-                    Qt.KeepAspectRatio,
-                    Qt.SmoothTransformation,
-                )
-                canvas = QPixmap(self.size())
-                canvas.fill(Qt.transparent)
-                painter = QPainter(canvas)
-                x = (self.width() - scaled.width()) // 2
-                y = (self.height() - scaled.height()) // 2
-                painter.drawPixmap(x, y, scaled)
-                painter.end()
-                self.pet_label.setPixmap(canvas)
-                LOGGER.info("Loaded pet image from %s", image_path)
-                return
+        )
+        if not state:
+            return local_assets + default_assets
+        state_assets = (
+            f"pet_{state}.gif",
+            f"pet_{state}.png",
+            f"pet_{state}.jpg",
+            f"pet_{state}.jpeg",
+        )
+        return local_assets + state_assets + default_assets
 
+    def _apply_pet_asset(self, image_path: Path) -> bool:
+        """Apply an image or GIF pet asset to the label."""
+        if image_path.suffix.lower() == ".gif":
+            movie = QMovie(str(image_path))
+            movie.setScaledSize(self.size())
+            self.pet_label.clear()
+            self.pet_label.setMovie(movie)
+            self.pet_movie = movie
+            movie.start()
+            LOGGER.info("Loaded pet animation from %s", image_path)
+            return True
+
+        pixmap = QPixmap(str(image_path))
+        if pixmap.isNull():
+            return False
+
+        scaled = pixmap.scaled(
+            self.size(),
+            Qt.KeepAspectRatio,
+            Qt.SmoothTransformation,
+        )
+        canvas = QPixmap(self.size())
+        canvas.fill(Qt.transparent)
+        painter = QPainter(canvas)
+        x = (self.width() - scaled.width()) // 2
+        y = (self.height() - scaled.height()) // 2
+        painter.drawPixmap(x, y, scaled)
+        painter.end()
+        self.pet_movie = None
+        self.pet_label.clear()
+        self.pet_label.setPixmap(canvas)
+        LOGGER.info("Loaded pet image from %s", image_path)
+        return True
+
+    def _draw_fallback_pet(self) -> None:
+        """Draw a fallback pet when no image resources are available."""
         fallback = QPixmap(self.size())
         fallback.fill(Qt.transparent)
         painter = QPainter(fallback)
@@ -128,8 +160,27 @@ class PetWindow(QMainWindow):
         painter.drawEllipse(57, 31, 28, 28)
         painter.drawEllipse(115, 31, 28, 28)
         painter.end()
+        self.pet_movie = None
+        self.pet_label.clear()
         self.pet_label.setPixmap(fallback)
         LOGGER.warning("pet.gif not found; using built-in fallback image")
+
+    def show_state(self, state: str, duration_ms: int = 0) -> None:
+        """Show a named default pet state, then optionally return to happy."""
+        self._state_generation += 1
+        generation = self._state_generation
+        self.pet_state = state
+        self._load_pet_animation(self.pet_state)
+        if duration_ms <= 0:
+            return
+
+        def restore_default() -> None:
+            if generation != self._state_generation:
+                return
+            self.pet_state = "happy"
+            self._load_pet_animation(self.pet_state)
+
+        QTimer.singleShot(duration_ms, restore_default)
 
     def apply_settings(self) -> None:
         """Apply size and positioning settings after config changes."""
@@ -143,7 +194,7 @@ class PetWindow(QMainWindow):
             self.pet_size = new_size
             self.setFixedSize(self.pet_size, self.pet_size)
             self.pet_label.setGeometry(0, 0, self.pet_size, self.pet_size)
-            self._load_pet_animation()
+            self._load_pet_animation(self.pet_state)
             self._reposition_current_bubble()
 
     def _apply_window_flags(self) -> None:
@@ -179,11 +230,13 @@ class PetWindow(QMainWindow):
 
     def show_bubble(self, word_info: Dict[str, object]) -> None:
         """Show a word bubble near the pet window."""
+        duration_seconds = int(self.config_manager.get("bubble_duration_seconds", 5))
+        self.show_state("eat", duration_ms=max(duration_seconds, 1) * 1000)
         self.close_all_bubbles()
         self.current_bubble = BubbleWindow(
             word_info,
             self.geometry(),
-            int(self.config_manager.get("bubble_duration_seconds", 5)),
+            duration_seconds,
             scale=self._bubble_scale(),
         )
         self.current_bubble.result_selected.connect(self.bubble_result.emit)
@@ -198,6 +251,7 @@ class PetWindow(QMainWindow):
     def mousePressEvent(self, event: object) -> None:
         """Start dragging when the left mouse button is pressed."""
         if event.button() == Qt.LeftButton:
+            self.show_state("walk")
             self.drag_position = event.globalPos() - self.frameGeometry().topLeft()
             self.press_position = event.globalPos()
             self.setCursor(QCursor(Qt.ClosedHandCursor))
@@ -222,6 +276,7 @@ class PetWindow(QMainWindow):
             self.setCursor(QCursor(Qt.ArrowCursor))
             self._reposition_current_bubble()
             self._save_position()
+            self.show_state("happy")
             if was_click:
                 self.pet_clicked.emit()
             event.accept()

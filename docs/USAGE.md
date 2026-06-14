@@ -71,8 +71,24 @@ resources/pets/local_pet.png
 Supported priority:
 
 ```text
-local_pet.gif > local_pet.png > local_pet.jpg > local_pet.jpeg > pet.gif > pet.png > pet.jpg > pet.jpeg
+local_pet.gif > local_pet.png > local_pet.jpg > local_pet.jpeg > pet_STATE.* > pet.gif > pet.png > pet.jpg > pet.jpeg
 ```
+
+The app includes default cat state images:
+
+- `pet_happy.png`
+- `pet_sad.png`
+- `pet_walk.png`
+- `pet_sleep.png`
+- `pet_eat.png`
+- `pet_play.png`
+- `pet_rest.png`
+
+The normal pet uses the happy state. Dragging the pet shows the walking state,
+word bubbles show the eating state, pause/quiet hours show the sleeping state,
+and fullscreen do-not-disturb shows the resting state. After a word bubble
+action, `记住了` briefly shows the happy state and `再记一次` briefly shows the sad
+state. Reaching the daily goal briefly shows the playing state.
 
 For best results, use a transparent PNG with a square canvas.
 The settings window can copy the selected image into `resources/pets/local_pet.*`.

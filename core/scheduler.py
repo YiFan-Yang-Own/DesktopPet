@@ -54,11 +54,13 @@ class Scheduler(QObject):
     def pause(self) -> None:
         """Pause reminder popups."""
         self.paused = True
+        self.pet_window.show_state("sleep")
         LOGGER.info("Scheduler paused")
 
     def resume(self) -> None:
         """Resume reminder popups."""
         self.paused = False
+        self.pet_window.show_state("happy")
         LOGGER.info("Scheduler resumed")
 
     def update_interval(self) -> None:
@@ -80,11 +82,14 @@ class Scheduler(QObject):
     def show_next_word(self, force: bool = False) -> None:
         """Fetch and display the next word."""
         if self.paused:
+            self.pet_window.show_state("sleep")
             return
         if not force and self._is_quiet_time():
+            self.pet_window.show_state("sleep")
             LOGGER.info("Skipping reminder during quiet hours")
             return
         if not force and self._is_foreground_fullscreen():
+            self.pet_window.show_state("rest")
             LOGGER.info("Skipping reminder because foreground window is fullscreen")
             word = self.word_manager.get_next_word()
             if word is not None:
@@ -101,6 +106,8 @@ class Scheduler(QObject):
         """Persist a bubble action and emit daily-goal notification when reached."""
         word_id = int(word_info["id"])
         self.word_manager.record_result(word_id, result)
+        state = "happy" if result == "remembered" else "sad"
+        self.pet_window.show_state(state, duration_ms=2500)
 
         stats = self.word_manager.get_today_stats()
         daily_goal = int(self.config_manager.get("daily_goal", 20))
@@ -108,6 +115,7 @@ class Scheduler(QObject):
         completed = stats["new_words"] + stats["reviews"]
         if completed >= daily_goal and self._goal_notified_today != today_key:
             self._goal_notified_today = today_key
+            self.pet_window.show_state("play", duration_ms=3500)
             self.daily_goal_reached.emit()
 
     def _attach_progress(self, word: Dict[str, object]) -> None:

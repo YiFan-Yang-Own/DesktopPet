@@ -10,7 +10,7 @@
 ## Features
 
 - 透明、无边框、置顶的桌面宠物窗口
-- 支持 GIF 宠物动画，也支持 PNG/JPG 静态宠物图
+- 支持 GIF 宠物动画，也支持 PNG/JPG 静态宠物图和内置小猫状态图
 - 鼠标拖拽移动宠物，释放后保持位置
 - 单词气泡提醒，包含单词、音标、释义、例句和操作按钮
 - “记住了 / 再记一次”学习反馈记录
@@ -37,7 +37,9 @@
 - `resources/pets/pet.jpeg`
 - `resources/icons/icon.png`
 
-宠物资源优先级为 `local_pet.*` > `pet.gif` > `pet.png` > `pet.jpg` > `pet.jpeg`。设置窗口中选择的图片会保存为本地 `local_pet.*`，不会覆盖仓库默认图片。如果这些文件都不存在，程序会使用内置绘制的兜底宠物。
+仓库默认提供 `pet_happy.png`、`pet_sad.png`、`pet_walk.png`、`pet_sleep.png`、`pet_eat.png`、`pet_play.png` 和 `pet_rest.png`。正常显示时使用开心状态；拖动时显示走路，弹出单词时显示吃饭，暂停或免打扰时显示睡觉，全屏免打扰时显示休息。点击单词气泡里的 `记住了` 会短暂显示开心状态，点击 `再记一次` 会短暂显示哭泣状态，完成每日目标时会短暂显示玩球状态。
+
+宠物资源优先级为 `local_pet.*` > 当前状态图 `pet_状态名.*` > `pet.gif` > `pet.png` > `pet.jpg` > `pet.jpeg`。设置窗口中选择的图片会保存为本地 `local_pet.*`，不会覆盖仓库默认图片，也不会被 Git 提交。如果这些文件都不存在，程序会使用内置绘制的兜底宠物。
 
 ## Usage
 
@@ -71,7 +73,14 @@ DesktopPet/
 ├── README.md
 ├── resources/
 │   ├── pets/
-│   │   └── pet.png
+│   │   ├── pet.png
+│   │   ├── pet_happy.png
+│   │   ├── pet_sad.png
+│   │   ├── pet_walk.png
+│   │   ├── pet_sleep.png
+│   │   ├── pet_eat.png
+│   │   ├── pet_play.png
+│   │   └── pet_rest.png
 │   └── icons/
 │       └── icon.png
 ├── core/
