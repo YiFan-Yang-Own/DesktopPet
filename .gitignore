@@ -18,6 +18,7 @@ build_package_data/
 logs/
 *.log
 data/user_data.db
+config.local.yaml
 resources/pets/local_pet.*
 
 # IDE

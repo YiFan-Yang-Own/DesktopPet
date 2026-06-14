@@ -34,29 +34,28 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 
 
 class ConfigManager:
-    """Read, merge, update, and persist YAML configuration."""
+    """Read default config and persist user overrides separately."""
 
     def __init__(self, config_path: Path) -> None:
         """Load configuration from disk, creating it when missing."""
         self.config_path = config_path
+        self.local_config_path = config_path.with_name(f"{config_path.stem}.local{config_path.suffix}")
         self.config: Dict[str, Any] = copy.deepcopy(DEFAULT_CONFIG)
         self.load()
 
     def load(self) -> Dict[str, Any]:
         """Load configuration and fill missing fields with defaults."""
+        loaded: Dict[str, Any] = {}
         if not self.config_path.exists():
             LOGGER.info("Config file missing; creating default config")
-            self.save()
-            return self.config
+            self._write_yaml(self.config_path, self.config)
+        else:
+            loaded = self._read_yaml(self.config_path)
 
-        try:
-            with self.config_path.open("r", encoding="utf-8") as file:
-                loaded = yaml.safe_load(file) or {}
-        except yaml.YAMLError:
-            LOGGER.exception("Invalid YAML config; falling back to defaults")
-            loaded = {}
+        local_loaded = self._read_yaml(self.local_config_path)
+        merged = self._merge_defaults(copy.deepcopy(DEFAULT_CONFIG), loaded)
+        self.config = self._merge_defaults(merged, local_loaded)
 
-        self.config = self._merge_defaults(copy.deepcopy(DEFAULT_CONFIG), loaded)
         self.save()
         return self.config
 
@@ -81,11 +80,31 @@ class ConfigManager:
         self.save()
 
     def save(self) -> None:
-        """Persist the current configuration to YAML."""
-        self.config_path.parent.mkdir(parents=True, exist_ok=True)
-        with self.config_path.open("w", encoding="utf-8") as file:
+        """Persist user changes to the ignored local config file."""
+        self._write_yaml(self.local_config_path, self.config)
+
+    def _read_yaml(self, path: Path) -> Dict[str, Any]:
+        """Read a YAML mapping from disk."""
+        if not path.exists():
+            return {}
+        try:
+            with path.open("r", encoding="utf-8") as file:
+                loaded = yaml.safe_load(file) or {}
+        except yaml.YAMLError:
+            LOGGER.exception("Invalid YAML config: %s", path)
+            return {}
+        if not isinstance(loaded, dict):
+            LOGGER.warning("Config file is not a mapping: %s", path)
+            return {}
+        return loaded
+
+    @staticmethod
+    def _write_yaml(path: Path, data: Dict[str, Any]) -> None:
+        """Write a YAML mapping to disk."""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8") as file:
             yaml.safe_dump(
-                self.config,
+                data,
                 file,
                 allow_unicode=True,
                 sort_keys=False,

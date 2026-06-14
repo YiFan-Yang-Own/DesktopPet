@@ -156,7 +156,7 @@ Linux 桌面环境需要可用的图形会话和 Qt 托盘支持。无桌面环�
 
 ## Configuration
 
-配置文件位于 `config.yaml`：
+默认配置文件位于 `config.yaml`。程序运行时产生的个人设置会写入被 Git 忽略的 `config.local.yaml`：
 
 ```yaml
 reminder_interval_minutes: 30
@@ -179,7 +179,7 @@ quiet_hours:
 | `quiet_hours.start` | string | 免打扰开始时间 |
 | `quiet_hours.end` | string | 免打扰结束时间 |
 
-修改配置也可以通过托盘菜单完成，程序会自动写回 `config.yaml`。
+修改配置也可以通过托盘菜单完成，程序会自动写入 `config.local.yaml`，不会改动仓库里的默认配置。
 
 ## Word Library
 

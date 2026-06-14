@@ -48,4 +48,5 @@ The packaged app includes:
 - `data/wordlib/`
 - `resources/`
 
-It does not include local learning records from `data/user_data.db`.
+It does not include local settings from `config.local.yaml` or local learning
+records from `data/user_data.db`.
