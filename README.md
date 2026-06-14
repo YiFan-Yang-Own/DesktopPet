@@ -192,6 +192,8 @@ quiet_hours:
 
 ```text
 data/wordlib/cet4.json
+data/wordlib/cet6.json
+data/wordlib/postgraduate.json
 ```
 
 词库格式为 JSON 数组：

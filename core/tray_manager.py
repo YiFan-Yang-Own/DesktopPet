@@ -254,7 +254,11 @@ class TrayManager:
     def _word_library_actions() -> dict[str, str]:
         """Return built-in and local word libraries for the menu."""
         wordlib_dir = Path(__file__).resolve().parents[1] / "data" / "wordlib"
-        actions = {"CET4": "cet4.json"}
+        actions = {
+            "CET4": "cet4.json",
+            "CET6": "cet6.json",
+            "考研": "postgraduate.json",
+        }
         for path in sorted(wordlib_dir.glob("custom_*.json")):
             actions[path.stem.replace("custom_", "", 1)] = path.name
         return actions
