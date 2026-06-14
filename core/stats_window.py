@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+from pathlib import Path
 from typing import Dict, List
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
+    QFileDialog,
     QFrame,
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QVBoxLayout,
@@ -105,8 +109,16 @@ class StatsWindow(QWidget):
         refresh_button = QPushButton("刷新")
         refresh_button.setCursor(Qt.PointingHandCursor)
         refresh_button.clicked.connect(self.refresh)
+        export_button = QPushButton("导出 CSV")
+        export_button.setCursor(Qt.PointingHandCursor)
+        export_button.clicked.connect(self._export_csv)
+        reset_button = QPushButton("重置记录")
+        reset_button.setCursor(Qt.PointingHandCursor)
+        reset_button.clicked.connect(self._reset_records)
         header.addLayout(title_box)
         header.addStretch(1)
+        header.addWidget(export_button)
+        header.addWidget(reset_button)
         header.addWidget(refresh_button)
         root.addLayout(header)
 
@@ -231,6 +243,39 @@ class StatsWindow(QWidget):
         layout.addWidget(result)
         layout.addWidget(time_label)
         return item
+
+    def _export_csv(self) -> None:
+        """Export learning records to a user-selected CSV file."""
+        default_name = f"desktoppet-records-{datetime.now():%Y%m%d-%H%M%S}.csv"
+        file_name, _ = QFileDialog.getSaveFileName(
+            self,
+            "导出学习记录",
+            str(Path.home() / default_name),
+            "CSV Files (*.csv)",
+        )
+        if not file_name:
+            return
+        try:
+            count = self.word_manager.export_records_csv(Path(file_name))
+        except OSError as exc:
+            QMessageBox.critical(self, "DesktopPet", f"导出失败：{exc}")
+            return
+        QMessageBox.information(self, "DesktopPet", f"已导出 {count} 条学习记录。")
+
+    def _reset_records(self) -> None:
+        """Reset local learning records after confirmation."""
+        result = QMessageBox.question(
+            self,
+            "DesktopPet",
+            "确定要清空本地学习记录吗？词库不会被删除。",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if result != QMessageBox.Yes:
+            return
+        self.word_manager.reset_learning_records()
+        self.refresh()
+        QMessageBox.information(self, "DesktopPet", "本地学习记录已清空。")
 
     def show_and_refresh(self) -> None:
         """Refresh and show the window."""

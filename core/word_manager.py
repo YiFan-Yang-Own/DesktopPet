@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import json
 import logging
 import sqlite3
@@ -224,6 +225,45 @@ class WordManager:
             (limit,),
         ).fetchall()
         return [dict(row) for row in rows]
+
+    def export_records_csv(self, export_path: Path) -> int:
+        """Export all learning records to a CSV file and return the row count."""
+        rows = self.connection.execute(
+            """
+            SELECT lr.reviewed_at, lr.result,
+                   v.word, v.phonetic, v.meaning, v.example, v.level
+            FROM learning_record lr
+            JOIN vocabulary v ON v.id = lr.word_id
+            ORDER BY lr.reviewed_at ASC, lr.id ASC
+            """
+        ).fetchall()
+        export_path.parent.mkdir(parents=True, exist_ok=True)
+        with export_path.open("w", encoding="utf-8-sig", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(
+                ["reviewed_at", "result", "word", "phonetic", "meaning", "example", "level"]
+            )
+            for row in rows:
+                writer.writerow(
+                    [
+                        row["reviewed_at"],
+                        row["result"],
+                        row["word"],
+                        row["phonetic"],
+                        row["meaning"],
+                        row["example"],
+                        row["level"],
+                    ]
+                )
+        return len(rows)
+
+    def reset_learning_records(self) -> None:
+        """Delete local learning progress while keeping imported vocabulary."""
+        with self.connection:
+            self.connection.execute("DELETE FROM learning_record")
+            self.connection.execute("UPDATE vocabulary SET last_shown_at = NULL")
+        self.recent_word_ids.clear()
+        self.deferred_word_ids.clear()
 
     def get_due_count(self) -> int:
         """Return the number of words that are due for review now."""
