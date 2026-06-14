@@ -9,7 +9,6 @@ from typing import Callable
 from PyQt5.QtCore import QTime, Qt
 from PyQt5.QtWidgets import (
     QCheckBox,
-    QComboBox,
     QDialog,
     QFileDialog,
     QFormLayout,
@@ -25,7 +24,6 @@ from PyQt5.QtWidgets import (
 
 from core.config_manager import ConfigManager
 from core.interval_dialog import IntervalDialog
-from core.pet_assets import DEFAULT_PET_SKIN, PET_SKINS, normalize_pet_skin, pet_skin_label
 from core import startup_manager
 
 
@@ -46,9 +44,6 @@ class SettingsWindow(QDialog):
         self.setWindowTitle("DesktopPet 设置")
         self.setMinimumWidth(460)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
-        self._opening_skin = normalize_pet_skin(
-            self.config_manager.get("pet.skin", DEFAULT_PET_SKIN)
-        )
 
         self.interval_seconds = int(
             self.config_manager.get(
@@ -71,11 +66,6 @@ class SettingsWindow(QDialog):
         )
         self.pet_asset_label = QLabel()
         self.pet_asset_label.setWordWrap(True)
-        self.pet_skin_combo = QComboBox()
-        for skin_key, skin_label in PET_SKINS.items():
-            self.pet_skin_combo.addItem(skin_label, skin_key)
-        self.pet_skin_combo.setCurrentIndex(self.pet_skin_combo.findData(self._opening_skin))
-        self.pet_skin_combo.currentIndexChanged.connect(self._preview_pet_skin)
         self.pet_always_on_top_check = QCheckBox("桌宠始终置顶")
         self.pet_always_on_top_check.setChecked(
             bool(self.config_manager.get("pet.always_on_top", True))
@@ -123,7 +113,7 @@ class SettingsWindow(QDialog):
                 left: 10px;
                 padding: 0 4px;
             }
-            QSpinBox, QTimeEdit, QComboBox {
+            QSpinBox, QTimeEdit {
                 min-height: 30px;
                 border: 1px solid #cbd5e1;
                 border-radius: 6px;
@@ -170,7 +160,6 @@ class SettingsWindow(QDialog):
         pet_form = QFormLayout(pet_group)
         pet_form.addRow("桌宠大小", self.pet_size_spin)
         pet_form.addRow("透明度", self.pet_opacity_spin)
-        pet_form.addRow("默认形象", self.pet_skin_combo)
         pet_form.addRow("", self.pet_always_on_top_check)
         pet_form.addRow("", self.pet_click_to_review_check)
         pet_asset_row = QHBoxLayout()
@@ -197,7 +186,7 @@ class SettingsWindow(QDialog):
         buttons.addStretch(1)
         cancel_button = QPushButton("取消")
         cancel_button.setObjectName("Secondary")
-        cancel_button.clicked.connect(self._cancel)
+        cancel_button.clicked.connect(self.reject)
         ok_button = QPushButton("确定")
         ok_button.setObjectName("Primary")
         ok_button.clicked.connect(self._save)
@@ -205,17 +194,6 @@ class SettingsWindow(QDialog):
         buttons.addWidget(ok_button)
         root.addLayout(buttons)
         self._update_pet_asset_label()
-
-    def showEvent(self, event: object) -> None:
-        """Refresh the preview baseline each time the settings window opens."""
-        self._opening_skin = normalize_pet_skin(
-            self.config_manager.get("pet.skin", DEFAULT_PET_SKIN)
-        )
-        self.pet_skin_combo.blockSignals(True)
-        self.pet_skin_combo.setCurrentIndex(self.pet_skin_combo.findData(self._opening_skin))
-        self.pet_skin_combo.blockSignals(False)
-        self._update_pet_asset_label()
-        super().showEvent(event)
 
     def _choose_pet_asset(self) -> None:
         """Copy a selected pet image into the project resource directory."""
@@ -269,17 +247,9 @@ class SettingsWindow(QDialog):
             if old_path.exists():
                 old_path.unlink()
                 removed = True
-        self.pet_skin_combo.setCurrentIndex(self.pet_skin_combo.findData(DEFAULT_PET_SKIN))
-        self.config_manager.set("pet.skin", DEFAULT_PET_SKIN)
-        self._update_pet_asset_label()
         if removed:
+            self._update_pet_asset_label()
             self.on_apply()
-
-    def _preview_pet_skin(self) -> None:
-        """Apply the selected built-in skin immediately for preview."""
-        self.config_manager.set("pet.skin", self.pet_skin_combo.currentData() or DEFAULT_PET_SKIN)
-        self._update_pet_asset_label()
-        self.on_apply()
 
     def _edit_interval(self) -> None:
         """Open the wheel-style interval dialog."""
@@ -298,7 +268,6 @@ class SettingsWindow(QDialog):
         self.config_manager.set("pet.opacity", self.pet_opacity_spin.value())
         self.config_manager.set("pet.always_on_top", self.pet_always_on_top_check.isChecked())
         self.config_manager.set("pet.click_to_review", self.pet_click_to_review_check.isChecked())
-        self.config_manager.set("pet.skin", self.pet_skin_combo.currentData() or DEFAULT_PET_SKIN)
         self.config_manager.set("startup_reminder", self.startup_reminder_check.isChecked())
         startup_manager.set_enabled(self.launch_at_login_check.isChecked(), self.base_dir)
         self.config_manager.set("quiet_hours.enabled", self.quiet_enabled_check.isChecked())
@@ -306,14 +275,6 @@ class SettingsWindow(QDialog):
         self.config_manager.set("quiet_hours.end", self.quiet_end_edit.time().toString("HH:mm"))
         self.on_apply()
         self.accept()
-
-    def _cancel(self) -> None:
-        """Close the dialog and restore the skin being previewed when opened."""
-        current_skin = normalize_pet_skin(self.config_manager.get("pet.skin", DEFAULT_PET_SKIN))
-        if current_skin != self._opening_skin:
-            self.config_manager.set("pet.skin", self._opening_skin)
-            self.on_apply()
-        self.reject()
 
     def _update_interval_label(self) -> None:
         """Refresh the human-readable interval label."""
@@ -349,8 +310,12 @@ class SettingsWindow(QDialog):
             "local_pet.png",
             "local_pet.jpg",
             "local_pet.jpeg",
+            "pet.gif",
+            "pet.png",
+            "pet.jpg",
+            "pet.jpeg",
         ):
             if (pet_dir / image_name).exists():
-                self.pet_asset_label.setText(f"本地自定义：{image_name}")
+                self.pet_asset_label.setText(image_name)
                 return
-        self.pet_asset_label.setText(f"内置：{pet_skin_label(self.pet_skin_combo.currentData())}")
+        self.pet_asset_label.setText("内置兜底")

@@ -12,11 +12,6 @@ from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow
 
 from core.bubble_window import BubbleWindow
 from core.config_manager import ConfigManager
-from core.pet_assets import (
-    DEFAULT_PET_SKIN,
-    PET_ASSET_EXTENSIONS,
-    normalize_pet_skin,
-)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -55,34 +50,36 @@ class PetWindow(QMainWindow):
     def _load_pet_animation(self, state: Optional[str] = None) -> None:
         """Load a pet asset when present, otherwise render a friendly fallback."""
         pet_dir = self.base_dir / "resources" / "pets"
-        for image_path in self._pet_asset_candidates(pet_dir, state):
+        for image_name in self._pet_asset_candidates(state):
+            image_path = pet_dir / image_name
             if image_path.exists() and self._apply_pet_asset(image_path):
                 return
 
         self._draw_fallback_pet()
 
-    def _pet_asset_candidates(self, pet_dir: Path, state: Optional[str]) -> tuple[Path, ...]:
-        """Return pet asset paths in display priority order."""
-        candidates = []
-        for extension in PET_ASSET_EXTENSIONS:
-            candidates.append(pet_dir / f"local_pet.{extension}")
-
-        skin = normalize_pet_skin(self.config_manager.get("pet.skin", DEFAULT_PET_SKIN))
-        skin_dirs = [pet_dir / "skins" / skin]
-        if skin != DEFAULT_PET_SKIN:
-            skin_dirs.append(pet_dir / "skins" / DEFAULT_PET_SKIN)
-
-        if state:
-            for skin_dir in skin_dirs:
-                for extension in PET_ASSET_EXTENSIONS:
-                    candidates.append(skin_dir / f"pet_{state}.{extension}")
-            for extension in PET_ASSET_EXTENSIONS:
-                candidates.append(pet_dir / f"pet_{state}.{extension}")
-
-        for extension in PET_ASSET_EXTENSIONS:
-            candidates.append(pet_dir / f"pet.{extension}")
-
-        return tuple(candidates)
+    def _pet_asset_candidates(self, state: Optional[str]) -> tuple[str, ...]:
+        """Return pet asset names in display priority order."""
+        local_assets = (
+            "local_pet.gif",
+            "local_pet.png",
+            "local_pet.jpg",
+            "local_pet.jpeg",
+        )
+        default_assets = (
+            "pet.gif",
+            "pet.png",
+            "pet.jpg",
+            "pet.jpeg",
+        )
+        if not state:
+            return local_assets + default_assets
+        state_assets = (
+            f"pet_{state}.gif",
+            f"pet_{state}.png",
+            f"pet_{state}.jpg",
+            f"pet_{state}.jpeg",
+        )
+        return local_assets + state_assets + default_assets
 
     def _apply_pet_asset(self, image_path: Path) -> bool:
         """Apply an image or GIF pet asset to the label."""
@@ -197,8 +194,8 @@ class PetWindow(QMainWindow):
             self.pet_size = new_size
             self.setFixedSize(self.pet_size, self.pet_size)
             self.pet_label.setGeometry(0, 0, self.pet_size, self.pet_size)
-        self._load_pet_animation(self.pet_state)
-        self._reposition_current_bubble()
+            self._load_pet_animation(self.pet_state)
+            self._reposition_current_bubble()
 
     def _apply_window_flags(self) -> None:
         """Apply frameless/tool/always-on-top flags from configuration."""
