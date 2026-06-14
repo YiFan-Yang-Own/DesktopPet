@@ -49,8 +49,16 @@ Available settings:
 - Daily goal
 - Bubble duration
 - Pet size
+- Pet opacity
+- Always on top
+- Click pet to review
 - Startup reminder
+- Launch at login
 - Quiet hours
+
+On Windows, `Launch at login` works in both source and packaged modes. When
+running from source, it launches `run.bat`. When running from a PyInstaller
+package, it launches the current `DesktopPet.exe`.
 
 ## Custom Pet Image
 
@@ -71,6 +79,12 @@ The settings window can copy the selected image into `resources/pets/local_pet.*
 These local pet files are ignored by Git.
 
 ## Custom Word Library
+
+Built-in libraries:
+
+- CET4: `data/wordlib/cet4.json`
+- CET6: `data/wordlib/cet6.json`
+- Postgraduate: `data/wordlib/postgraduate.json`
 
 Open the tray menu, choose `词库选择`, then click `导入词库...`.
 

@@ -14,6 +14,15 @@ Output:
 dist\DesktopPet\DesktopPet.exe
 ```
 
+Distribute the whole folder:
+
+```text
+dist\DesktopPet\
+```
+
+Do not distribute only `DesktopPet.exe`; the `_internal` files and packaged
+resources are required.
+
 ## Fast Build
 
 For daily development:
@@ -50,3 +59,11 @@ The packaged app includes:
 
 It does not include local settings from `config.local.yaml` or local learning
 records from `data/user_data.db`.
+
+## Launch At Login
+
+When the packaged app is running, the `开机自动启动` setting registers the
+current `DesktopPet.exe` in the current user's Windows Startup folder.
+
+If you move the packaged folder after enabling launch at login, disable and
+enable the setting once so the startup script points to the new location.
