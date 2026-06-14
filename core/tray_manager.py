@@ -37,7 +37,11 @@ class TrayManager:
         self.word_manager = word_manager
         self.pet_window = pet_window
         self.stats_window = StatsWindow(config_manager, word_manager)
-        self.settings_window = SettingsWindow(config_manager, self._apply_settings)
+        self.settings_window = SettingsWindow(
+            config_manager,
+            self._apply_settings,
+            Path(__file__).resolve().parents[1],
+        )
 
         self.tray_icon = QSystemTrayIcon(self._load_icon())
         self.tray_icon.setToolTip("DesktopPet")

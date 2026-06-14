@@ -57,13 +57,15 @@ Available settings:
 Put your image in:
 
 ```text
-resources/pets/pet.png
+resources/pets/local_pet.png
 ```
 
 Supported priority:
 
 ```text
-pet.gif > pet.png > pet.jpg > pet.jpeg
+local_pet.gif > local_pet.png > local_pet.jpg > local_pet.jpeg > pet.gif > pet.png > pet.jpg > pet.jpeg
 ```
 
 For best results, use a transparent PNG with a square canvas.
+The settings window can copy the selected image into `resources/pets/local_pet.*`.
+These local pet files are ignored by Git.

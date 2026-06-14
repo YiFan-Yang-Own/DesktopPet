@@ -26,13 +26,17 @@
 
 项目已提供默认托盘图标和默认静态桌宠。如果想替换宠物或图标，可以自行放入资源文件：
 
+- `resources/pets/local_pet.gif`
+- `resources/pets/local_pet.png`
+- `resources/pets/local_pet.jpg`
+- `resources/pets/local_pet.jpeg`
 - `resources/pets/pet.gif`
 - `resources/pets/pet.png`
 - `resources/pets/pet.jpg`
 - `resources/pets/pet.jpeg`
 - `resources/icons/icon.png`
 
-宠物资源优先级为 `pet.gif` > `pet.png` > `pet.jpg` > `pet.jpeg`。如果这些文件都不存在，程序会使用内置绘制的兜底宠物。
+宠物资源优先级为 `local_pet.*` > `pet.gif` > `pet.png` > `pet.jpg` > `pet.jpeg`。设置窗口中选择的图片会保存为本地 `local_pet.*`，不会覆盖仓库默认图片。如果这些文件都不存在，程序会使用内置绘制的兜底宠物。
 
 ## Usage
 
@@ -148,7 +152,7 @@ Linux 桌面环境需要可用的图形会话和 Qt 托盘支持。无桌面环�
 - 如果提示找不到 Python，请安装 Python 3.9+，并在 Windows 安装时勾选 `Add python.exe to PATH`。
 - 如果依赖安装失败，先运行 `run_debug.bat` 查看具体错误；脚本会自动尝试一次清华 PyPI 镜像。
 - 如果 PyQt5 安装失败，通常是 Python 版本过新、网络源不可用或 pip 被代理/防火墙拦截。
-- 如果只是想替换本地宠物图片，修改 `resources/pets/pet.png` 即可；仓库默认图片会保持不变，除非主动取消本地的 `skip-worktree` 标记并提交。
+- 如果只是想替换本地宠物图片，优先在设置窗口里选择图片；程序会生成被 Git 忽略的 `resources/pets/local_pet.*`，不会影响仓库默认图片。
 
 ## Configuration
 
@@ -306,7 +310,7 @@ More docs:
 
 ### 程序启动后没有宠物动画怎么办？
 
-确认 `resources/pets/pet.gif` 是否存在。如果不存在，程序会显示内置兜底图形。
+确认 `resources/pets/local_pet.*` 或 `resources/pets/pet.*` 是否存在。如果不存在，程序会显示内置兜底图形。
 
 ### 托盘图标不显示怎么办？
 

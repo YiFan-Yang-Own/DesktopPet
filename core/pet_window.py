@@ -50,35 +50,43 @@ class PetWindow(QMainWindow):
     def _load_pet_animation(self) -> None:
         """Load a pet asset when present, otherwise render a friendly fallback."""
         pet_dir = self.base_dir / "resources" / "pets"
-        gif_path = pet_dir / "pet.gif"
-        if gif_path.exists():
-            movie = QMovie(str(gif_path))
-            movie.setScaledSize(self.size())
-            self.pet_label.setMovie(movie)
-            movie.start()
-            LOGGER.info("Loaded pet animation from %s", gif_path)
-            return
-
-        for image_name in ("pet.png", "pet.jpg", "pet.jpeg"):
+        for image_name in (
+            "local_pet.gif",
+            "local_pet.png",
+            "local_pet.jpg",
+            "local_pet.jpeg",
+            "pet.gif",
+            "pet.png",
+            "pet.jpg",
+            "pet.jpeg",
+        ):
             image_path = pet_dir / image_name
-            if image_path.exists():
-                pixmap = QPixmap(str(image_path))
-                if not pixmap.isNull():
-                    scaled = pixmap.scaled(
-                        self.size(),
-                        Qt.KeepAspectRatio,
-                        Qt.SmoothTransformation,
-                    )
-                    canvas = QPixmap(self.size())
-                    canvas.fill(Qt.transparent)
-                    painter = QPainter(canvas)
-                    x = (self.width() - scaled.width()) // 2
-                    y = (self.height() - scaled.height()) // 2
-                    painter.drawPixmap(x, y, scaled)
-                    painter.end()
-                    self.pet_label.setPixmap(canvas)
-                    LOGGER.info("Loaded pet image from %s", image_path)
-                    return
+            if not image_path.exists():
+                continue
+            if image_path.suffix.lower() == ".gif":
+                movie = QMovie(str(image_path))
+                movie.setScaledSize(self.size())
+                self.pet_label.setMovie(movie)
+                movie.start()
+                LOGGER.info("Loaded pet animation from %s", image_path)
+                return
+            pixmap = QPixmap(str(image_path))
+            if not pixmap.isNull():
+                scaled = pixmap.scaled(
+                    self.size(),
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation,
+                )
+                canvas = QPixmap(self.size())
+                canvas.fill(Qt.transparent)
+                painter = QPainter(canvas)
+                x = (self.width() - scaled.width()) // 2
+                y = (self.height() - scaled.height()) // 2
+                painter.drawPixmap(x, y, scaled)
+                painter.end()
+                self.pet_label.setPixmap(canvas)
+                LOGGER.info("Loaded pet image from %s", image_path)
+                return
 
         fallback = QPixmap(self.size())
         fallback.fill(Qt.transparent)

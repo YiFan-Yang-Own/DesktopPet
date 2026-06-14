@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+import shutil
+from pathlib import Path
 from typing import Callable
 
 from PyQt5.QtCore import QTime, Qt
 from PyQt5.QtWidgets import (
     QCheckBox,
     QDialog,
+    QFileDialog,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QPushButton,
     QSpinBox,
     QTimeEdit,
@@ -25,11 +29,17 @@ from core.interval_dialog import IntervalDialog
 class SettingsWindow(QDialog):
     """A unified settings dialog for reminder and pet behavior."""
 
-    def __init__(self, config_manager: ConfigManager, on_apply: Callable[[], None]) -> None:
+    def __init__(
+        self,
+        config_manager: ConfigManager,
+        on_apply: Callable[[], None],
+        base_dir: Path,
+    ) -> None:
         """Create a settings window."""
         super().__init__()
         self.config_manager = config_manager
         self.on_apply = on_apply
+        self.base_dir = base_dir
         self.setWindowTitle("DesktopPet 设置")
         self.setMinimumWidth(460)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
@@ -48,6 +58,8 @@ class SettingsWindow(QDialog):
             int(self.config_manager.get("bubble_duration_seconds", 5)),
         )
         self.pet_size_spin = self._spin(120, 880, int(self.config_manager.get("pet.size", 200)))
+        self.pet_asset_label = QLabel()
+        self.pet_asset_label.setWordWrap(True)
         self.startup_reminder_check = QCheckBox("启动后自动弹出一个单词")
         self.startup_reminder_check.setChecked(
             bool(self.config_manager.get("startup_reminder", True))
@@ -129,6 +141,17 @@ class SettingsWindow(QDialog):
         pet_group = QGroupBox("桌宠")
         pet_form = QFormLayout(pet_group)
         pet_form.addRow("桌宠大小", self.pet_size_spin)
+        pet_asset_row = QHBoxLayout()
+        choose_pet_button = QPushButton("选择图片...")
+        choose_pet_button.setObjectName("Secondary")
+        choose_pet_button.clicked.connect(self._choose_pet_asset)
+        reset_pet_button = QPushButton("恢复默认")
+        reset_pet_button.setObjectName("Secondary")
+        reset_pet_button.clicked.connect(self._reset_pet_asset)
+        pet_asset_row.addWidget(self.pet_asset_label, 1)
+        pet_asset_row.addWidget(choose_pet_button)
+        pet_asset_row.addWidget(reset_pet_button)
+        pet_form.addRow("桌宠图片", pet_asset_row)
         root.addWidget(pet_group)
 
         quiet_group = QGroupBox("免打扰")
@@ -149,6 +172,63 @@ class SettingsWindow(QDialog):
         buttons.addWidget(cancel_button)
         buttons.addWidget(ok_button)
         root.addLayout(buttons)
+        self._update_pet_asset_label()
+
+    def _choose_pet_asset(self) -> None:
+        """Copy a selected pet image into the project resource directory."""
+        file_name, _ = QFileDialog.getOpenFileName(
+            self,
+            "选择桌宠图片",
+            str(Path.home()),
+            "Images (*.gif *.png *.jpg *.jpeg)",
+        )
+        if not file_name:
+            return
+
+        source = Path(file_name)
+        suffix = source.suffix.lower()
+        if suffix not in {".gif", ".png", ".jpg", ".jpeg"}:
+            QMessageBox.warning(self, "DesktopPet", "只支持 GIF、PNG 或 JPG 图片。")
+            return
+
+        pet_dir = self.base_dir / "resources" / "pets"
+        pet_dir.mkdir(parents=True, exist_ok=True)
+        target = pet_dir / f"local_pet{suffix}"
+        try:
+            for old_name in (
+                "local_pet.gif",
+                "local_pet.png",
+                "local_pet.jpg",
+                "local_pet.jpeg",
+            ):
+                old_path = pet_dir / old_name
+                if old_path.exists() and old_path != target:
+                    old_path.unlink()
+            shutil.copy2(source, target)
+        except OSError as exc:
+            QMessageBox.critical(self, "DesktopPet", f"复制图片失败：{exc}")
+            return
+
+        self._update_pet_asset_label()
+        self.on_apply()
+
+    def _reset_pet_asset(self) -> None:
+        """Remove local override pet assets while keeping the committed default."""
+        pet_dir = self.base_dir / "resources" / "pets"
+        removed = False
+        for old_name in (
+            "local_pet.gif",
+            "local_pet.png",
+            "local_pet.jpg",
+            "local_pet.jpeg",
+        ):
+            old_path = pet_dir / old_name
+            if old_path.exists():
+                old_path.unlink()
+                removed = True
+        if removed:
+            self._update_pet_asset_label()
+            self.on_apply()
 
     def _edit_interval(self) -> None:
         """Open the wheel-style interval dialog."""
@@ -196,3 +276,21 @@ class SettingsWindow(QDialog):
         edit = QTimeEdit(time_value)
         edit.setDisplayFormat("HH:mm")
         return edit
+
+    def _update_pet_asset_label(self) -> None:
+        """Show the active pet asset file name."""
+        pet_dir = self.base_dir / "resources" / "pets"
+        for image_name in (
+            "local_pet.gif",
+            "local_pet.png",
+            "local_pet.jpg",
+            "local_pet.jpeg",
+            "pet.gif",
+            "pet.png",
+            "pet.jpg",
+            "pet.jpeg",
+        ):
+            if (pet_dir / image_name).exists():
+                self.pet_asset_label.setText(image_name)
+                return
+        self.pet_asset_label.setText("内置兜底")
