@@ -81,14 +81,14 @@ class BubbleWindow(QWidget):
         tag_label.setAlignment(Qt.AlignCenter)
         tag_label.setStyleSheet(
             f"""
-            QLabel {
+            QLabel {{
                 background: #e0f2fe;
                 color: #0369a1;
                 border-radius: 5px;
                 padding: {self._scaled(3)}px {self._scaled(8)}px;
                 font-size: {self._scaled(11)}px;
                 font-weight: 700;
-            }
+            }}
             """
         )
         status_label = QLabel(str(self.word_info.get("progress_text", "今日继续加油")))
@@ -117,14 +117,14 @@ class BubbleWindow(QWidget):
         example_label.setWordWrap(True)
         example_label.setStyleSheet(
             f"""
-            QLabel {
+            QLabel {{
                 color: #64748b;
                 font-size: {self._scaled(12)}px;
                 background: #f8fafc;
                 border: 1px solid #e5e7eb;
                 border-radius: 6px;
                 padding: {self._scaled(8)}px;
-            }
+            }}
             """
         )
 
@@ -156,33 +156,33 @@ class BubbleWindow(QWidget):
             button.setMinimumHeight(self._scaled(28))
             button.setStyleSheet(
                 f"""
-                QPushButton {
+                QPushButton {{
                     background: #ffffff;
                     border: 1px solid #d1d5db;
                     border-radius: 6px;
                     padding: {self._scaled(6)}px {self._scaled(14)}px;
                     color: #111827;
                     font-weight: 600;
-                }
-                QPushButton:hover {
+                }}
+                QPushButton:hover {{
                     background: #f3f4f6;
-                }
+                }}
                 """
             )
         remember_button.setStyleSheet(
             f"""
-            QPushButton {
+            QPushButton {{
                 background: #2563eb;
                 border: 1px solid #2563eb;
                 border-radius: 6px;
                 padding: {self._scaled(6)}px {self._scaled(14)}px;
                 color: #ffffff;
                 font-weight: 700;
-            }
-            QPushButton:hover {
+            }}
+            QPushButton:hover {{
                 background: #1d4ed8;
                 border-color: #1d4ed8;
-            }
+            }}
             """
         )
 
