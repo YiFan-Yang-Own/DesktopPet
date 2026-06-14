@@ -2,12 +2,24 @@
 
 from __future__ import annotations
 
+import json
 import logging
+import re
+import shutil
 from pathlib import Path
 
 from PyQt5.QtGui import QColor, QIcon, QPainter, QPixmap
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QAction, QActionGroup, QApplication, QDialog, QMenu, QSystemTrayIcon
+from PyQt5.QtWidgets import (
+    QAction,
+    QActionGroup,
+    QApplication,
+    QDialog,
+    QFileDialog,
+    QMenu,
+    QMessageBox,
+    QSystemTrayIcon,
+)
 
 from core.config_manager import ConfigManager
 from core.interval_dialog import IntervalDialog
@@ -109,11 +121,7 @@ class TrayManager:
         self.menu.addSeparator()
 
         word_menu = self.menu.addMenu("词库选择")
-        for label, file_name in {
-            "CET4": "cet4.json",
-            "CET6": "cet6.json",
-            "考研": "postgraduate.json",
-        }.items():
+        for label, file_name in self._word_library_actions().items():
             action = QAction(label, word_menu)
             action.setCheckable(True)
             action.setData(file_name)
@@ -123,6 +131,10 @@ class TrayManager:
             )
             self.word_group.addAction(action)
             word_menu.addAction(action)
+        word_menu.addSeparator()
+        import_word_lib_action = QAction("导入词库...", word_menu)
+        import_word_lib_action.triggered.connect(self._import_word_library)
+        word_menu.addAction(import_word_lib_action)
 
         interval_menu = self.menu.addMenu("设置提醒间隔")
         for label, minutes in {
@@ -183,7 +195,69 @@ class TrayManager:
         """Update selected word library and refresh word storage."""
         self.config_manager.set("word_lib", file_name)
         self.word_manager.refresh_word_library()
+        self._build_menu()
         LOGGER.info("Word library changed to %s", file_name)
+
+    def _import_word_library(self) -> None:
+        """Import a JSON word library into the local wordlib directory."""
+        file_name, _ = QFileDialog.getOpenFileName(
+            None,
+            "导入词库",
+            str(Path.home()),
+            "JSON Files (*.json)",
+        )
+        if not file_name:
+            return
+
+        source = Path(file_name)
+        try:
+            words = json.loads(source.read_text(encoding="utf-8"))
+            self._validate_word_library(words)
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            QMessageBox.critical(None, "DesktopPet", f"词库格式无效：{exc}")
+            return
+
+        wordlib_dir = Path(__file__).resolve().parents[1] / "data" / "wordlib"
+        wordlib_dir.mkdir(parents=True, exist_ok=True)
+        safe_stem = re.sub(r"[^A-Za-z0-9_-]+", "_", source.stem).strip("_") or "wordlib"
+        target = wordlib_dir / f"custom_{safe_stem}.json"
+        index = 1
+        while target.exists():
+            target = wordlib_dir / f"custom_{safe_stem}_{index}.json"
+            index += 1
+
+        try:
+            shutil.copy2(source, target)
+        except OSError as exc:
+            QMessageBox.critical(None, "DesktopPet", f"复制词库失败：{exc}")
+            return
+
+        self._set_word_lib(target.name)
+        QMessageBox.information(None, "DesktopPet", f"已导入词库：{target.name}")
+
+    @staticmethod
+    def _validate_word_library(words: object) -> None:
+        """Validate the minimal JSON schema for a word library."""
+        if not isinstance(words, list):
+            raise ValueError("顶层必须是 JSON 数组")
+        if not words:
+            raise ValueError("词库不能为空")
+        for index, item in enumerate(words, start=1):
+            if not isinstance(item, dict):
+                raise ValueError(f"第 {index} 项不是对象")
+            if not str(item.get("word", "")).strip():
+                raise ValueError(f"第 {index} 项缺少 word")
+            if not str(item.get("meaning", "")).strip():
+                raise ValueError(f"第 {index} 项缺少 meaning")
+
+    @staticmethod
+    def _word_library_actions() -> dict[str, str]:
+        """Return built-in and local word libraries for the menu."""
+        wordlib_dir = Path(__file__).resolve().parents[1] / "data" / "wordlib"
+        actions = {"CET4": "cet4.json"}
+        for path in sorted(wordlib_dir.glob("custom_*.json")):
+            actions[path.stem.replace("custom_", "", 1)] = path.name
+        return actions
 
     def _set_interval(self, minutes: int) -> None:
         """Update reminder interval and restart scheduler timer."""

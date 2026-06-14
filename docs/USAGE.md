@@ -69,3 +69,22 @@ local_pet.gif > local_pet.png > local_pet.jpg > local_pet.jpeg > pet.gif > pet.p
 For best results, use a transparent PNG with a square canvas.
 The settings window can copy the selected image into `resources/pets/local_pet.*`.
 These local pet files are ignored by Git.
+
+## Custom Word Library
+
+Open the tray menu, choose `词库选择`, then click `导入词库...`.
+
+The JSON file must be an array of objects. Each object needs at least:
+
+```json
+[
+  {
+    "word": "abandon",
+    "meaning": "放弃；遗弃",
+    "phonetic": "/əˈbændən/",
+    "example": "He abandoned his plan."
+  }
+]
+```
+
+Imported files are copied to `data/wordlib/custom_*.json` and ignored by Git.

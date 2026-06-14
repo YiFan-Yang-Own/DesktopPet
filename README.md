@@ -202,7 +202,9 @@ data/wordlib/cet4.json
 ]
 ```
 
-新增词库时，将 JSON 文件放入 `data/wordlib/`，再把 `config.yaml` 中的 `word_lib` 改成对应文件名即可。
+新增词库时，可以在托盘菜单的 `词库选择` 中点击 `导入词库...`，选择符合格式的 JSON 文件。程序会复制为 `data/wordlib/custom_*.json` 并自动切换到该词库；这些本地自定义词库会被 Git 忽略。
+
+也可以手动将 JSON 文件放入 `data/wordlib/`，再在本地 `config.local.yaml` 中把 `word_lib` 改成对应文件名。
 
 ## Packaging
 
