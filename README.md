@@ -175,6 +175,10 @@ quiet_hours:
 | `reminder_interval_minutes` | integer | 单词提醒间隔，单位为分钟 |
 | `word_lib` | string | 词库文件名，位于 `data/wordlib/` |
 | `daily_goal` | integer | 每日学习目标，用于托盘完成提醒 |
+| `pet.size` | integer | 桌宠尺寸 |
+| `pet.opacity` | integer | 桌宠透明度，范围 20-100 |
+| `pet.always_on_top` | boolean | 桌宠是否置顶 |
+| `pet.click_to_review` | boolean | 点击桌宠是否立即复习 |
 | `quiet_hours.enabled` | boolean | 是否启用夜间免打扰 |
 | `quiet_hours.start` | string | 免打扰开始时间 |
 | `quiet_hours.end` | string | 免打扰结束时间 |

@@ -58,8 +58,21 @@ class SettingsWindow(QDialog):
             int(self.config_manager.get("bubble_duration_seconds", 5)),
         )
         self.pet_size_spin = self._spin(120, 880, int(self.config_manager.get("pet.size", 200)))
+        self.pet_opacity_spin = self._spin(
+            20,
+            100,
+            int(self.config_manager.get("pet.opacity", 100)),
+        )
         self.pet_asset_label = QLabel()
         self.pet_asset_label.setWordWrap(True)
+        self.pet_always_on_top_check = QCheckBox("桌宠始终置顶")
+        self.pet_always_on_top_check.setChecked(
+            bool(self.config_manager.get("pet.always_on_top", True))
+        )
+        self.pet_click_to_review_check = QCheckBox("点击桌宠立即复习")
+        self.pet_click_to_review_check.setChecked(
+            bool(self.config_manager.get("pet.click_to_review", True))
+        )
         self.startup_reminder_check = QCheckBox("启动后自动弹出一个单词")
         self.startup_reminder_check.setChecked(
             bool(self.config_manager.get("startup_reminder", True))
@@ -141,6 +154,9 @@ class SettingsWindow(QDialog):
         pet_group = QGroupBox("桌宠")
         pet_form = QFormLayout(pet_group)
         pet_form.addRow("桌宠大小", self.pet_size_spin)
+        pet_form.addRow("透明度", self.pet_opacity_spin)
+        pet_form.addRow("", self.pet_always_on_top_check)
+        pet_form.addRow("", self.pet_click_to_review_check)
         pet_asset_row = QHBoxLayout()
         choose_pet_button = QPushButton("选择图片...")
         choose_pet_button.setObjectName("Secondary")
@@ -244,6 +260,9 @@ class SettingsWindow(QDialog):
         self.config_manager.set("daily_goal", self.daily_goal_spin.value())
         self.config_manager.set("bubble_duration_seconds", self.bubble_duration_spin.value())
         self.config_manager.set("pet.size", self.pet_size_spin.value())
+        self.config_manager.set("pet.opacity", self.pet_opacity_spin.value())
+        self.config_manager.set("pet.always_on_top", self.pet_always_on_top_check.isChecked())
+        self.config_manager.set("pet.click_to_review", self.pet_click_to_review_check.isChecked())
         self.config_manager.set("startup_reminder", self.startup_reminder_check.isChecked())
         self.config_manager.set("quiet_hours.enabled", self.quiet_enabled_check.isChecked())
         self.config_manager.set("quiet_hours.start", self.quiet_start_edit.time().toString("HH:mm"))

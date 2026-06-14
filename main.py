@@ -114,7 +114,11 @@ def main() -> int:
     tray_manager = TrayManager(config_manager, scheduler, word_manager, pet_window)
 
     pet_window.bubble_result.connect(scheduler.handle_bubble_result)
-    pet_window.pet_clicked.connect(lambda: scheduler.show_next_word(force=True))
+    pet_window.pet_clicked.connect(
+        lambda: scheduler.show_next_word(force=True)
+        if bool(config_manager.get("pet.click_to_review", True))
+        else None
+    )
     scheduler.daily_goal_reached.connect(tray_manager.show_daily_goal_notification)
 
     def graceful_shutdown() -> None:

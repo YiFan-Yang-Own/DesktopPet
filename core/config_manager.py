@@ -22,6 +22,9 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "bubble_duration_seconds": 5,
     "pet": {
         "size": 200,
+        "opacity": 100,
+        "always_on_top": True,
+        "click_to_review": True,
         "x": None,
         "y": None,
     },

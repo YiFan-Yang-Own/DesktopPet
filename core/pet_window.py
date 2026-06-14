@@ -32,14 +32,11 @@ class PetWindow(QMainWindow):
         self.press_position: Optional[QPoint] = None
         self.current_bubble: Optional[BubbleWindow] = None
 
-        self.setWindowFlags(
-            Qt.FramelessWindowHint
-            | Qt.WindowStaysOnTopHint
-            | Qt.Tool
-        )
+        self._apply_window_flags()
         self.setAttribute(Qt.WA_TranslucentBackground, True)
         self.pet_size = int(self.config_manager.get("pet.size", 200))
         self.setFixedSize(self.pet_size, self.pet_size)
+        self._apply_opacity()
 
         self.pet_label = QLabel(self)
         self.pet_label.setAlignment(Qt.AlignCenter)
@@ -136,6 +133,11 @@ class PetWindow(QMainWindow):
 
     def apply_settings(self) -> None:
         """Apply size and positioning settings after config changes."""
+        was_visible = self.isVisible()
+        self._apply_window_flags()
+        if was_visible:
+            self.show()
+        self._apply_opacity()
         new_size = int(self.config_manager.get("pet.size", self.pet_size))
         if new_size != self.pet_size:
             self.pet_size = new_size
@@ -143,6 +145,18 @@ class PetWindow(QMainWindow):
             self.pet_label.setGeometry(0, 0, self.pet_size, self.pet_size)
             self._load_pet_animation()
             self._reposition_current_bubble()
+
+    def _apply_window_flags(self) -> None:
+        """Apply frameless/tool/always-on-top flags from configuration."""
+        flags = Qt.FramelessWindowHint | Qt.Tool
+        if bool(self.config_manager.get("pet.always_on_top", True)):
+            flags |= Qt.WindowStaysOnTopHint
+        self.setWindowFlags(flags)
+
+    def _apply_opacity(self) -> None:
+        """Apply pet window opacity from configuration."""
+        opacity = int(self.config_manager.get("pet.opacity", 100))
+        self.setWindowOpacity(max(20, min(opacity, 100)) / 100)
 
     def _restore_position(self) -> None:
         """Restore saved position or move to the lower-right corner."""
