@@ -25,6 +25,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "opacity": 100,
         "always_on_top": True,
         "click_to_review": True,
+        "skin": "classic",
         "x": None,
         "y": None,
     },

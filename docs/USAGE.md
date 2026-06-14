@@ -60,6 +60,21 @@ On Windows, `Launch at login` works in both source and packaged modes. When
 running from source, it launches `run.bat`. When running from a PyInstaller
 package, it launches the current `DesktopPet.exe`.
 
+## Built-in Pet Skins
+
+Open `设置`, then choose a skin from `默认形象`.
+
+Built-in skins:
+
+- 经典三花
+- 暖橘小猫
+- 银灰小猫
+- 黑白小猫
+- 奶茶小猫
+
+Each skin includes happy, sad, walking, sleeping, eating, playing, and resting
+states. Local custom images still take priority over built-in skins.
+
 ## Custom Pet Image
 
 Put your image in:
@@ -71,18 +86,8 @@ resources/pets/local_pet.png
 Supported priority:
 
 ```text
-local_pet.gif > local_pet.png > local_pet.jpg > local_pet.jpeg > pet_STATE.* > pet.gif > pet.png > pet.jpg > pet.jpeg
+local_pet.* > selected skin pet_STATE.* > classic skin pet_STATE.* > root pet_STATE.* > root pet.*
 ```
-
-The app includes default cat state images:
-
-- `pet_happy.png`
-- `pet_sad.png`
-- `pet_walk.png`
-- `pet_sleep.png`
-- `pet_eat.png`
-- `pet_play.png`
-- `pet_rest.png`
 
 The normal pet uses the happy state. Dragging the pet shows the walking state,
 word bubbles show the eating state, pause/quiet hours show the sleeping state,

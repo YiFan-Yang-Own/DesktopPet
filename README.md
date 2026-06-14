@@ -10,7 +10,7 @@
 ## Features
 
 - 透明、无边框、置顶的桌面宠物窗口
-- 支持 GIF 宠物动画，也支持 PNG/JPG 静态宠物图和内置小猫状态图
+- 支持 GIF 宠物动画，也支持 PNG/JPG 静态宠物图和 5 组内置小猫形象
 - 鼠标拖拽移动宠物，释放后保持位置
 - 单词气泡提醒，包含单词、音标、释义、例句和操作按钮
 - “记住了 / 再记一次”学习反馈记录
@@ -25,7 +25,15 @@
 
 ## Preview
 
-项目已提供默认托盘图标和默认静态桌宠。如果想替换宠物或图标，可以自行放入资源文件：
+项目已提供默认托盘图标和 5 组默认静态桌宠形象，可以在设置窗口的 `默认形象` 中切换：
+
+- 经典三花
+- 暖橘小猫
+- 银灰小猫
+- 黑白小猫
+- 奶茶小猫
+
+如果想替换宠物或图标，可以自行放入资源文件：
 
 - `resources/pets/local_pet.gif`
 - `resources/pets/local_pet.png`
@@ -37,9 +45,9 @@
 - `resources/pets/pet.jpeg`
 - `resources/icons/icon.png`
 
-仓库默认提供 `pet_happy.png`、`pet_sad.png`、`pet_walk.png`、`pet_sleep.png`、`pet_eat.png`、`pet_play.png` 和 `pet_rest.png`。正常显示时使用开心状态；拖动时显示走路，弹出单词时显示吃饭，暂停或免打扰时显示睡觉，全屏免打扰时显示休息。点击单词气泡里的 `记住了` 会短暂显示开心状态，点击 `再记一次` 会短暂显示哭泣状态，完成每日目标时会短暂显示玩球状态。
+每组默认形象都提供 `pet_happy.png`、`pet_sad.png`、`pet_walk.png`、`pet_sleep.png`、`pet_eat.png`、`pet_play.png` 和 `pet_rest.png`。正常显示时使用开心状态；拖动时显示走路，弹出单词时显示吃饭，暂停或免打扰时显示睡觉，全屏免打扰时显示休息。点击单词气泡里的 `记住了` 会短暂显示开心状态，点击 `再记一次` 会短暂显示哭泣状态，完成每日目标时会短暂显示玩球状态。
 
-宠物资源优先级为 `local_pet.*` > 当前状态图 `pet_状态名.*` > `pet.gif` > `pet.png` > `pet.jpg` > `pet.jpeg`。设置窗口中选择的图片会保存为本地 `local_pet.*`，不会覆盖仓库默认图片，也不会被 Git 提交。如果这些文件都不存在，程序会使用内置绘制的兜底宠物。
+宠物资源优先级为 `local_pet.*` > 当前内置形象的状态图 > 经典形象状态图 > 根目录兼容图 `pet_状态名.*` / `pet.*`。设置窗口中选择的图片会保存为本地 `local_pet.*`，不会覆盖仓库默认图片，也不会被 Git 提交。如果这些文件都不存在，程序会使用内置绘制的兜底宠物。
 
 ## Usage
 
@@ -75,12 +83,12 @@ DesktopPet/
 │   ├── pets/
 │   │   ├── pet.png
 │   │   ├── pet_happy.png
-│   │   ├── pet_sad.png
-│   │   ├── pet_walk.png
-│   │   ├── pet_sleep.png
-│   │   ├── pet_eat.png
-│   │   ├── pet_play.png
-│   │   └── pet_rest.png
+│   │   └── skins/
+│   │       ├── classic/
+│   │       ├── ginger/
+│   │       ├── silver/
+│   │       ├── tuxedo/
+│   │       └── latte/
 │   └── icons/
 │       └── icon.png
 ├── core/
@@ -189,6 +197,7 @@ quiet_hours:
 | `pet.opacity` | integer | 桌宠透明度，范围 20-100 |
 | `pet.always_on_top` | boolean | 桌宠是否置顶 |
 | `pet.click_to_review` | boolean | 点击桌宠是否立即复习 |
+| `pet.skin` | string | 当前内置桌宠形象 |
 | `quiet_hours.enabled` | boolean | 是否启用夜间免打扰 |
 | `quiet_hours.start` | string | 免打扰开始时间 |
 | `quiet_hours.end` | string | 免打扰结束时间 |
