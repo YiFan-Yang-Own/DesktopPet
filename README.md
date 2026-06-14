@@ -234,7 +234,7 @@ dist\DesktopPet\DesktopPet.exe
 
 ### Fast Build
 
-日常开发时推荐使用快速增量打包：
+环境没问题时推荐使用快速增量打包：
 
 ```text
 build_fast.bat
