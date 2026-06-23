@@ -69,12 +69,12 @@ class BubbleWindow(QWidget):
         """Build labels and buttons inside the custom-painted bubble."""
         container = QVBoxLayout(self)
         container.setContentsMargins(
-            self._scaled(20),
-            self._scaled(16),
-            self._scaled(20),
-            self._scaled(26),
+            self._scaled(22),
+            self._scaled(18),
+            self._scaled(22),
+            self._scaled(28),
         )
-        container.setSpacing(self._scaled(8))
+        container.setSpacing(self._scaled(9))
 
         header_layout = QHBoxLayout()
         tag_label = QLabel(str(self.word_info.get("level", "CET4")))
@@ -82,8 +82,8 @@ class BubbleWindow(QWidget):
         tag_label.setStyleSheet(
             f"""
             QLabel {{
-                background: #e0f2fe;
-                color: #0369a1;
+                background: #dbeafe;
+                color: #1d4ed8;
                 border-radius: 5px;
                 padding: {self._scaled(3)}px {self._scaled(8)}px;
                 font-size: {self._scaled(11)}px;
@@ -102,7 +102,7 @@ class BubbleWindow(QWidget):
         word_font.setPointSize(self._scaled(20))
         word_font.setBold(True)
         word_label.setFont(word_font)
-        word_label.setStyleSheet("color: #111827;")
+        word_label.setStyleSheet("color: #0f172a;")
 
         phonetic_label = QLabel(str(self.word_info.get("phonetic", "")))
         phonetic_label.setStyleSheet(f"color: #2563eb; font-size: {self._scaled(13)}px;")
@@ -118,10 +118,10 @@ class BubbleWindow(QWidget):
         example_label.setStyleSheet(
             f"""
             QLabel {{
-                color: #64748b;
+                color: #475569;
                 font-size: {self._scaled(12)}px;
-                background: #f8fafc;
-                border: 1px solid #e5e7eb;
+                background: #f9fafb;
+                border: 1px solid #e2e8f0;
                 border-radius: 6px;
                 padding: {self._scaled(8)}px;
             }}
@@ -136,12 +136,12 @@ class BubbleWindow(QWidget):
         progress_bar.setStyleSheet(
             """
             QProgressBar {
-                background: #e5e7eb;
+                background: #e2e8f0;
                 border: none;
                 border-radius: 3px;
             }
             QProgressBar::chunk {
-                background: #22c55e;
+                background: #2563eb;
                 border-radius: 3px;
             }
             """
@@ -161,11 +161,12 @@ class BubbleWindow(QWidget):
                     border: 1px solid #d1d5db;
                     border-radius: 6px;
                     padding: {self._scaled(6)}px {self._scaled(14)}px;
-                    color: #111827;
+                    color: #374151;
                     font-weight: 600;
                 }}
                 QPushButton:hover {{
-                    background: #f3f4f6;
+                    background: #f8fafc;
+                    border-color: #94a3b8;
                 }}
                 """
             )
@@ -205,7 +206,7 @@ class BubbleWindow(QWidget):
         """Paint the rounded bubble body and its lower pointer triangle."""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing, True)
-        painter.setPen(QPen(QColor("#cbd5e1"), 1))
+        painter.setPen(QPen(QColor("#bfdbfe"), 1))
 
         width = self.width()
         height = self.height()
@@ -214,7 +215,7 @@ class BubbleWindow(QWidget):
 
         gradient = QLinearGradient(0, 0, 0, body_rect.height())
         gradient.setColorAt(0, QColor("#ffffff"))
-        gradient.setColorAt(1, QColor("#f8fafc"))
+        gradient.setColorAt(1, QColor("#eff6ff"))
         painter.setBrush(gradient)
 
         path = QPainterPath()

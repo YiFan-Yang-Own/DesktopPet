@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMessageBox,
+    QProgressBar,
     QPushButton,
     QScrollArea,
     QVBoxLayout,
@@ -37,6 +38,8 @@ class StatsWindow(QWidget):
         self.setMinimumSize(560, 520)
         self.setWindowFlags(Qt.Window)
         self._cards: Dict[str, QLabel] = {}
+        self._today_progress = QProgressBar()
+        self._today_progress_label = QLabel()
         self._records_container = QWidget()
         self._records_layout = QVBoxLayout(self._records_container)
         self._records_layout.setContentsMargins(0, 0, 0, 0)
@@ -48,8 +51,8 @@ class StatsWindow(QWidget):
         self.setStyleSheet(
             """
             QWidget {
-                background: #f6f7fb;
-                color: #202124;
+                background: #f4f6fa;
+                color: #111827;
                 font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
                 font-size: 13px;
             }
@@ -59,7 +62,7 @@ class StatsWindow(QWidget):
                 color: #1f2937;
             }
             QLabel#Subtitle {
-                color: #6b7280;
+                color: #64748b;
             }
             QFrame#Card {
                 background: #ffffff;
@@ -69,10 +72,34 @@ class StatsWindow(QWidget):
             QLabel#CardValue {
                 font-size: 24px;
                 font-weight: 700;
-                color: #2563eb;
+                color: #1d4ed8;
             }
             QLabel#CardLabel {
-                color: #6b7280;
+                color: #64748b;
+            }
+            QFrame#ProgressPanel {
+                background: #ffffff;
+                border: 1px solid #dbeafe;
+                border-radius: 8px;
+            }
+            QLabel#ProgressTitle {
+                color: #1e3a8a;
+                font-size: 14px;
+                font-weight: 700;
+            }
+            QLabel#ProgressText {
+                color: #475569;
+                font-weight: 600;
+            }
+            QProgressBar {
+                background: #e5e7eb;
+                border: none;
+                border-radius: 5px;
+                height: 10px;
+            }
+            QProgressBar::chunk {
+                background: #2563eb;
+                border-radius: 5px;
             }
             QFrame#RecordItem {
                 background: #ffffff;
@@ -80,15 +107,34 @@ class StatsWindow(QWidget):
                 border-radius: 8px;
             }
             QPushButton {
-                background: #2563eb;
-                color: white;
                 border: none;
                 border-radius: 6px;
                 padding: 8px 14px;
                 font-weight: 600;
             }
-            QPushButton:hover {
+            QPushButton#Primary {
+                background: #2563eb;
+                color: #ffffff;
+            }
+            QPushButton#Primary:hover {
                 background: #1d4ed8;
+            }
+            QPushButton#Secondary {
+                background: #e5e7eb;
+                color: #111827;
+            }
+            QPushButton#Secondary:hover {
+                background: #d1d5db;
+            }
+            QPushButton#Danger {
+                background: #fee2e2;
+                color: #b91c1c;
+            }
+            QPushButton#Danger:hover {
+                background: #fecaca;
+            }
+            QScrollArea {
+                background: transparent;
             }
             """
         )
@@ -107,12 +153,15 @@ class StatsWindow(QWidget):
         title_box.addWidget(subtitle)
 
         refresh_button = QPushButton("刷新")
+        refresh_button.setObjectName("Primary")
         refresh_button.setCursor(Qt.PointingHandCursor)
         refresh_button.clicked.connect(self.refresh)
         export_button = QPushButton("导出 CSV")
+        export_button.setObjectName("Secondary")
         export_button.setCursor(Qt.PointingHandCursor)
         export_button.clicked.connect(self._export_csv)
         reset_button = QPushButton("重置记录")
+        reset_button.setObjectName("Danger")
         reset_button.setCursor(Qt.PointingHandCursor)
         reset_button.clicked.connect(self._reset_records)
         header.addLayout(title_box)
@@ -138,6 +187,24 @@ class StatsWindow(QWidget):
             row, column = divmod(index, 3)
             cards.addWidget(self._create_stat_card(key, label), row, column)
         root.addLayout(cards)
+
+        progress_panel = QFrame()
+        progress_panel.setObjectName("ProgressPanel")
+        progress_layout = QVBoxLayout(progress_panel)
+        progress_layout.setContentsMargins(14, 12, 14, 12)
+        progress_layout.setSpacing(8)
+        progress_header = QHBoxLayout()
+        progress_title = QLabel("今日目标")
+        progress_title.setObjectName("ProgressTitle")
+        self._today_progress_label.setObjectName("ProgressText")
+        progress_header.addWidget(progress_title)
+        progress_header.addStretch(1)
+        progress_header.addWidget(self._today_progress_label)
+        self._today_progress.setRange(0, 100)
+        self._today_progress.setTextVisible(False)
+        progress_layout.addLayout(progress_header)
+        progress_layout.addWidget(self._today_progress)
+        root.addWidget(progress_panel)
 
         recent_title = QLabel("最近记录")
         recent_title_font = QFont()
@@ -185,6 +252,9 @@ class StatsWindow(QWidget):
             f"{overall['learned_words']} / {overall['total_words']}"
         )
         self._cards["due"].setText(str(due_count))
+        percent = min(int(today["total"] / max(daily_goal, 1) * 100), 100)
+        self._today_progress.setValue(percent)
+        self._today_progress_label.setText(f"{today['total']} / {daily_goal}")
         self._render_records(self.word_manager.get_recent_records())
 
     def _render_records(self, records: List[Dict[str, object]]) -> None:
@@ -197,7 +267,11 @@ class StatsWindow(QWidget):
 
         if not records:
             empty = QLabel("还没有学习记录。完成一次气泡操作后，这里会显示历史。")
-            empty.setStyleSheet("color: #6b7280; padding: 16px;")
+            empty.setAlignment(Qt.AlignCenter)
+            empty.setStyleSheet(
+                "background: #ffffff; border: 1px solid #e5e7eb; "
+                "border-radius: 8px; color: #64748b; padding: 24px;"
+            )
             self._records_layout.addWidget(empty)
             self._records_layout.addStretch(1)
             return
@@ -231,9 +305,11 @@ class StatsWindow(QWidget):
         result.setAlignment(Qt.AlignCenter)
         result.setMinimumWidth(72)
         result.setStyleSheet(
-            "color: #16a34a; font-weight: 700;"
+            "background: #dcfce7; border-radius: 6px; color: #15803d; "
+            "font-weight: 700; padding: 5px 8px;"
             if record["result"] == "remembered"
-            else "color: #dc2626; font-weight: 700;"
+            else "background: #fee2e2; border-radius: 6px; color: #b91c1c; "
+            "font-weight: 700; padding: 5px 8px;"
         )
         time_label = QLabel(str(record["reviewed_at"]).replace("T", " "))
         time_label.setStyleSheet("color: #6b7280;")

@@ -46,13 +46,17 @@ class IntervalDialog(QDialog):
         self.setStyleSheet(
             """
             QDialog {
-                background: #f8fafc;
+                background: #f4f6fa;
                 color: #111827;
                 font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
             }
             QLabel#Title {
                 font-size: 18px;
                 font-weight: 700;
+                color: #0f172a;
+            }
+            QLabel#Hint {
+                color: #64748b;
             }
             QSpinBox {
                 background: #ffffff;
@@ -61,6 +65,9 @@ class IntervalDialog(QDialog):
                 padding: 6px;
                 font-size: 18px;
                 min-height: 42px;
+            }
+            QSpinBox:focus {
+                border-color: #2563eb;
             }
             QPushButton {
                 border: none;
@@ -72,19 +79,28 @@ class IntervalDialog(QDialog):
                 background: #2563eb;
                 color: #ffffff;
             }
+            QPushButton#OkButton:hover {
+                background: #1d4ed8;
+            }
             QPushButton#CancelButton {
                 background: #e5e7eb;
                 color: #111827;
             }
+            QPushButton#CancelButton:hover {
+                background: #d1d5db;
+            }
             """
         )
         root = QVBoxLayout(self)
-        root.setContentsMargins(20, 18, 20, 18)
+        root.setContentsMargins(22, 20, 22, 20)
         root.setSpacing(14)
 
         title = QLabel("提醒间隔")
         title.setObjectName("Title")
         root.addWidget(title)
+        hint = QLabel("设置桌宠自动弹出单词的频率")
+        hint.setObjectName("Hint")
+        root.addWidget(hint)
 
         grid = QGridLayout()
         grid.setHorizontalSpacing(10)

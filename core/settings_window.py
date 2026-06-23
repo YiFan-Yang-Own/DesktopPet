@@ -42,7 +42,7 @@ class SettingsWindow(QDialog):
         self.on_apply = on_apply
         self.base_dir = base_dir
         self.setWindowTitle("DesktopPet 设置")
-        self.setMinimumWidth(460)
+        self.setMinimumWidth(520)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
         self.interval_seconds = int(
@@ -53,17 +53,21 @@ class SettingsWindow(QDialog):
         )
         self.interval_label = QLabel()
         self.daily_goal_spin = self._spin(1, 999, int(self.config_manager.get("daily_goal", 20)))
+        self.daily_goal_spin.setFixedWidth(150)
         self.bubble_duration_spin = self._spin(
             1,
             60,
             int(self.config_manager.get("bubble_duration_seconds", 5)),
         )
+        self.bubble_duration_spin.setFixedWidth(150)
         self.pet_size_spin = self._spin(120, 880, int(self.config_manager.get("pet.size", 200)))
+        self.pet_size_spin.setFixedWidth(150)
         self.pet_opacity_spin = self._spin(
             20,
             100,
             int(self.config_manager.get("pet.opacity", 100)),
         )
+        self.pet_opacity_spin.setFixedWidth(150)
         self.pet_asset_label = QLabel()
         self.pet_asset_label.setWordWrap(True)
         self.pet_always_on_top_check = QCheckBox("桌宠始终置顶")
@@ -87,6 +91,8 @@ class SettingsWindow(QDialog):
         )
         self.quiet_start_edit = self._time_edit(str(self.config_manager.get("quiet_hours.start", "22:00")))
         self.quiet_end_edit = self._time_edit(str(self.config_manager.get("quiet_hours.end", "08:00")))
+        self.quiet_start_edit.setFixedWidth(150)
+        self.quiet_end_edit.setFixedWidth(150)
         self._build_ui()
         self._update_interval_label()
 
@@ -95,7 +101,7 @@ class SettingsWindow(QDialog):
         self.setStyleSheet(
             """
             QDialog {
-                background: #f8fafc;
+                background: #f4f6fa;
                 color: #111827;
                 font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
                 font-size: 13px;
@@ -104,14 +110,15 @@ class SettingsWindow(QDialog):
                 background: #ffffff;
                 border: 1px solid #e5e7eb;
                 border-radius: 8px;
-                margin-top: 12px;
-                padding: 12px;
+                margin-top: 14px;
+                padding: 14px 12px 12px 12px;
                 font-weight: 700;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 10px;
+                left: 12px;
                 padding: 0 4px;
+                color: #374151;
             }
             QSpinBox, QTimeEdit {
                 min-height: 30px;
@@ -119,6 +126,17 @@ class SettingsWindow(QDialog):
                 border-radius: 6px;
                 padding: 3px 8px;
                 background: #ffffff;
+            }
+            QSpinBox:focus, QTimeEdit:focus {
+                border-color: #2563eb;
+            }
+            QCheckBox {
+                spacing: 8px;
+                color: #374151;
+            }
+            QCheckBox::indicator {
+                width: 16px;
+                height: 16px;
             }
             QPushButton {
                 border: none;
@@ -130,19 +148,28 @@ class SettingsWindow(QDialog):
                 background: #2563eb;
                 color: #ffffff;
             }
+            QPushButton#Primary:hover {
+                background: #1d4ed8;
+            }
             QPushButton#Secondary {
                 background: #e5e7eb;
                 color: #111827;
+            }
+            QPushButton#Secondary:hover {
+                background: #d1d5db;
             }
             """
         )
 
         root = QVBoxLayout(self)
-        root.setContentsMargins(18, 16, 18, 16)
-        root.setSpacing(12)
+        root.setContentsMargins(22, 18, 22, 18)
+        root.setSpacing(14)
 
         reminder_group = QGroupBox("提醒")
         reminder_form = QFormLayout(reminder_group)
+        reminder_form.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        reminder_form.setHorizontalSpacing(14)
+        reminder_form.setVerticalSpacing(10)
         interval_row = QHBoxLayout()
         interval_button = QPushButton("调整...")
         interval_button.setObjectName("Secondary")
@@ -158,6 +185,9 @@ class SettingsWindow(QDialog):
 
         pet_group = QGroupBox("桌宠")
         pet_form = QFormLayout(pet_group)
+        pet_form.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        pet_form.setHorizontalSpacing(14)
+        pet_form.setVerticalSpacing(10)
         pet_form.addRow("桌宠大小", self.pet_size_spin)
         pet_form.addRow("透明度", self.pet_opacity_spin)
         pet_form.addRow("", self.pet_always_on_top_check)
@@ -177,6 +207,9 @@ class SettingsWindow(QDialog):
 
         quiet_group = QGroupBox("免打扰")
         quiet_form = QFormLayout(quiet_group)
+        quiet_form.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        quiet_form.setHorizontalSpacing(14)
+        quiet_form.setVerticalSpacing(10)
         quiet_form.addRow("", self.quiet_enabled_check)
         quiet_form.addRow("开始时间", self.quiet_start_edit)
         quiet_form.addRow("结束时间", self.quiet_end_edit)
