@@ -79,7 +79,11 @@ class Scheduler(QObject):
         """Fetch and display the next word when reminders are allowed."""
         self.show_next_word(force=False)
 
-    def show_next_word(self, force: bool = False) -> None:
+    def show_weak_word(self) -> None:
+        """Fetch and display a missed word with high priority."""
+        self.show_next_word(force=True, weak_only=True)
+
+    def show_next_word(self, force: bool = False, weak_only: bool = False) -> None:
         """Fetch and display the next word."""
         if self.paused:
             self.pet_window.show_state("sleep")
@@ -96,7 +100,10 @@ class Scheduler(QObject):
                 self.word_manager.defer_word(int(word["id"]))
             return
 
-        word = self.word_manager.get_next_word()
+        word = self.word_manager.get_weak_review_word() if weak_only else self.word_manager.get_next_word()
+        if word is None and weak_only:
+            LOGGER.info("No weak word available; falling back to the regular queue")
+            word = self.word_manager.get_next_word()
         if word is None:
             return
         self._attach_progress(word)

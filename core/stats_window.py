@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMessageBox,
     QProgressBar,
     QPushButton,
@@ -35,11 +36,18 @@ class StatsWindow(QWidget):
         self.config_manager = config_manager
         self.word_manager = word_manager
         self.setWindowTitle("DesktopPet 学习记录")
-        self.setMinimumSize(560, 520)
+        self.setMinimumSize(560, 660)
         self.setWindowFlags(Qt.Window)
         self._cards: Dict[str, QLabel] = {}
         self._today_progress = QProgressBar()
         self._today_progress_label = QLabel()
+        self._search_edit = QLineEdit()
+        self._recent_title = QLabel()
+        self._weak_title = QLabel()
+        self._weak_words_container = QWidget()
+        self._weak_words_layout = QVBoxLayout(self._weak_words_container)
+        self._weak_words_layout.setContentsMargins(0, 0, 0, 0)
+        self._weak_words_layout.setSpacing(8)
         self._records_container = QWidget()
         self._records_layout = QVBoxLayout(self._records_container)
         self._records_layout.setContentsMargins(0, 0, 0, 0)
@@ -82,6 +90,11 @@ class StatsWindow(QWidget):
                 border: 1px solid #dbeafe;
                 border-radius: 8px;
             }
+            QFrame#WeakPanel {
+                background: #fffaf3;
+                border: 1px solid #fed7aa;
+                border-radius: 8px;
+            }
             QLabel#ProgressTitle {
                 color: #1e3a8a;
                 font-size: 14px;
@@ -100,6 +113,16 @@ class StatsWindow(QWidget):
             QProgressBar::chunk {
                 background: #2563eb;
                 border-radius: 5px;
+            }
+            QLineEdit {
+                background: #ffffff;
+                border: 1px solid #cbd5e1;
+                border-radius: 8px;
+                padding: 8px 10px;
+                min-height: 20px;
+            }
+            QLineEdit:focus {
+                border-color: #2563eb;
             }
             QFrame#RecordItem {
                 background: #ffffff;
@@ -171,6 +194,16 @@ class StatsWindow(QWidget):
         header.addWidget(refresh_button)
         root.addLayout(header)
 
+        search_row = QHBoxLayout()
+        search_label = QLabel("搜索")
+        search_label.setObjectName("ProgressTitle")
+        self._search_edit.setPlaceholderText("搜索单词、释义、例句、日期或结果")
+        self._search_edit.setClearButtonEnabled(True)
+        self._search_edit.textChanged.connect(self.refresh)
+        search_row.addWidget(search_label)
+        search_row.addWidget(self._search_edit, 1)
+        root.addLayout(search_row)
+
         cards = QGridLayout()
         cards.setHorizontalSpacing(10)
         cards.setVerticalSpacing(10)
@@ -182,6 +215,7 @@ class StatsWindow(QWidget):
                 ("streak", "连续天数"),
                 ("learned", "已学单词"),
                 ("due", "待复习"),
+                ("weak_words", "错词数量"),
             ]
         ):
             row, column = divmod(index, 3)
@@ -206,12 +240,29 @@ class StatsWindow(QWidget):
         progress_layout.addWidget(self._today_progress)
         root.addWidget(progress_panel)
 
-        recent_title = QLabel("最近记录")
+        weak_panel = QFrame()
+        weak_panel.setObjectName("WeakPanel")
+        weak_layout = QVBoxLayout(weak_panel)
+        weak_layout.setContentsMargins(14, 12, 14, 12)
+        weak_layout.setSpacing(8)
+        weak_header = QHBoxLayout()
+        self._weak_title.setText("错词本")
+        self._weak_title.setObjectName("ProgressTitle")
+        self._weak_words_label = QLabel("0 个")
+        self._weak_words_label.setObjectName("ProgressText")
+        weak_header.addWidget(self._weak_title)
+        weak_header.addStretch(1)
+        weak_header.addWidget(self._weak_words_label)
+        weak_layout.addLayout(weak_header)
+        weak_layout.addWidget(self._weak_words_container)
+        root.addWidget(weak_panel)
+
+        self._recent_title.setText("最近记录")
         recent_title_font = QFont()
         recent_title_font.setPointSize(15)
         recent_title_font.setBold(True)
-        recent_title.setFont(recent_title_font)
-        root.addWidget(recent_title)
+        self._recent_title.setFont(recent_title_font)
+        root.addWidget(self._recent_title)
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -238,6 +289,7 @@ class StatsWindow(QWidget):
 
     def refresh(self) -> None:
         """Refresh all statistics and recent records."""
+        query = self._search_edit.text().strip()
         today = self.word_manager.get_today_stats()
         overall = self.word_manager.get_overall_stats()
         daily_goal = int(self.config_manager.get("daily_goal", 20))
@@ -252,12 +304,105 @@ class StatsWindow(QWidget):
             f"{overall['learned_words']} / {overall['total_words']}"
         )
         self._cards["due"].setText(str(due_count))
+        weak_words = self.word_manager.get_weak_words(limit=5, query=query)
+        weak_count = self.word_manager.get_weak_word_count(query=query)
+        self._cards["weak_words"].setText(str(weak_count))
         percent = min(int(today["total"] / max(daily_goal, 1) * 100), 100)
         self._today_progress.setValue(percent)
         self._today_progress_label.setText(f"{today['total']} / {daily_goal}")
-        self._render_records(self.word_manager.get_recent_records())
+        self._weak_words_label.setText(f"{weak_count} 个")
+        self._weak_title.setText("错词本" if not query else f"错词本 · {weak_count} 个")
+        records = self.word_manager.get_recent_records(query=query)
+        self._recent_title.setText("最近记录" if not query else f"最近记录 · {len(records)} 条")
+        self._render_weak_words(
+            weak_words,
+            empty_message="暂无错词，继续保持！" if not query else "没有匹配的错词。",
+        )
+        self._render_records(
+            records,
+            empty_message=(
+                "还没有学习记录。完成一次气泡操作后，这里会显示历史。"
+                if not query
+                else "没有匹配的学习记录。"
+            ),
+        )
 
-    def _render_records(self, records: List[Dict[str, object]]) -> None:
+    def _render_weak_words(
+        self,
+        words: List[Dict[str, object]],
+        empty_message: str,
+    ) -> None:
+        """Render the currently weak words."""
+        while self._weak_words_layout.count():
+            item = self._weak_words_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+
+        if not words:
+            empty = QLabel(empty_message)
+            empty.setAlignment(Qt.AlignCenter)
+            empty.setStyleSheet(
+                "background: #ffffff; border: 1px solid #fde68a; "
+                "border-radius: 8px; color: #92400e; padding: 18px;"
+            )
+            self._weak_words_layout.addWidget(empty)
+            self._weak_words_layout.addStretch(1)
+            return
+
+        for word in words:
+            self._weak_words_layout.addWidget(self._create_weak_word_item(word))
+        self._weak_words_layout.addStretch(1)
+
+    def _create_weak_word_item(self, word: Dict[str, object]) -> QFrame:
+        """Create one weak-word summary row."""
+        item = QFrame()
+        item.setObjectName("RecordItem")
+        layout = QHBoxLayout(item)
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setSpacing(12)
+
+        word_box = QVBoxLayout()
+        title_row = QHBoxLayout()
+        title = QLabel(str(word["word"]))
+        title_font = QFont()
+        title_font.setPointSize(14)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        badge = QLabel("错词")
+        badge.setAlignment(Qt.AlignCenter)
+        badge.setStyleSheet(
+            "background: #fee2e2; border-radius: 6px; color: #b91c1c; "
+            "font-weight: 700; padding: 4px 8px;"
+        )
+        title_row.addWidget(title)
+        title_row.addWidget(badge)
+        title_row.addStretch(1)
+
+        meaning = QLabel(str(word["meaning"]))
+        meaning.setWordWrap(True)
+        meaning.setStyleSheet("color: #4b5563;")
+        meta = QLabel(
+            f"错 {int(word['again_count'])} 次 · 记住 {int(word['remembered_count'])} 次"
+        )
+        meta.setStyleSheet("color: #b45309; font-weight: 600;")
+        last_reviewed_at = str(word.get("last_reviewed_at", "")).replace("T", " ")
+        time_label = QLabel(f"最近出现: {last_reviewed_at}")
+        time_label.setStyleSheet("color: #6b7280;")
+
+        word_box.addLayout(title_row)
+        word_box.addWidget(meaning)
+        word_box.addWidget(meta)
+        word_box.addWidget(time_label)
+
+        layout.addLayout(word_box, 1)
+        return item
+
+    def _render_records(
+        self,
+        records: List[Dict[str, object]],
+        empty_message: str,
+    ) -> None:
         """Render recent learning record rows."""
         while self._records_layout.count():
             item = self._records_layout.takeAt(0)
@@ -266,7 +411,7 @@ class StatsWindow(QWidget):
                 widget.deleteLater()
 
         if not records:
-            empty = QLabel("还没有学习记录。完成一次气泡操作后，这里会显示历史。")
+            empty = QLabel(empty_message)
             empty.setAlignment(Qt.AlignCenter)
             empty.setStyleSheet(
                 "background: #ffffff; border: 1px solid #e5e7eb; "

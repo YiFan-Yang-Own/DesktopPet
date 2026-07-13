@@ -21,6 +21,7 @@ data/user_data.db
 data/wordlib/custom_*.json
 config.local.yaml
 resources/pets/local_pet.*
+desktoppet-backup-*.zip
 
 # IDE
 .idea/

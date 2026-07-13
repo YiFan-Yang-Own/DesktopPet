@@ -211,18 +211,97 @@ class WordManager:
             "again": int(again),
         }
 
-    def get_recent_records(self, limit: int = 20) -> List[Dict[str, object]]:
-        """Return recent learning records with word details."""
+    def get_weak_word_count(self, query: str = "") -> int:
+        """Return the number of words that have been answered again at least once."""
+        search_clause, params = self._build_search_clause(
+            query,
+            [
+                "v.word",
+                "v.phonetic",
+                "v.meaning",
+                "v.example",
+                "v.level",
+                "lr.reviewed_at",
+                "lr.result",
+            ],
+        )
+        row = self.connection.execute(
+            f"""
+            SELECT COUNT(*) AS count
+            FROM (
+                SELECT v.id
+                FROM vocabulary v
+                JOIN learning_record lr ON lr.word_id = v.id
+                WHERE 1 = 1
+                  {search_clause}
+                GROUP BY v.id
+                HAVING SUM(CASE WHEN lr.result = 'again' THEN 1 ELSE 0 END) > 0
+            )
+            """,
+            params,
+        ).fetchone()
+        return int(row["count"])
+
+    def get_weak_words(self, limit: int = 20, query: str = "") -> List[Dict[str, object]]:
+        """Return weak words ranked by how often they were missed."""
+        search_clause, params = self._build_search_clause(
+            query,
+            [
+                "v.word",
+                "v.phonetic",
+                "v.meaning",
+                "v.example",
+                "v.level",
+                "lr.reviewed_at",
+                "lr.result",
+            ],
+        )
         rows = self.connection.execute(
-            """
+            f"""
+            SELECT v.id, v.word, v.phonetic, v.meaning, v.example, v.level,
+                   MAX(lr.reviewed_at) AS last_reviewed_at,
+                   SUM(CASE WHEN lr.result = 'remembered' THEN 1 ELSE 0 END) AS remembered_count,
+                   SUM(CASE WHEN lr.result = 'again' THEN 1 ELSE 0 END) AS again_count,
+                   MAX(CASE WHEN lr.result = 'again' THEN lr.reviewed_at ELSE NULL END) AS last_again_at
+            FROM vocabulary v
+            JOIN learning_record lr ON lr.word_id = v.id
+            WHERE 1 = 1
+              {search_clause}
+            GROUP BY v.id
+            HAVING SUM(CASE WHEN lr.result = 'again' THEN 1 ELSE 0 END) > 0
+            ORDER BY again_count DESC, last_reviewed_at DESC, v.id ASC
+            LIMIT ?
+            """,
+            (*params, limit),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_recent_records(self, limit: int = 20, query: str = "") -> List[Dict[str, object]]:
+        """Return recent learning records with word details."""
+        search_clause, params = self._build_search_clause(
+            query,
+            [
+                "lr.reviewed_at",
+                "lr.result",
+                "v.word",
+                "v.phonetic",
+                "v.meaning",
+                "v.example",
+                "v.level",
+            ],
+        )
+        rows = self.connection.execute(
+            f"""
             SELECT lr.id, lr.word_id, lr.reviewed_at, lr.result,
                    v.word, v.phonetic, v.meaning, v.example, v.level
             FROM learning_record lr
             JOIN vocabulary v ON v.id = lr.word_id
+            WHERE 1 = 1
+              {search_clause}
             ORDER BY lr.reviewed_at DESC, lr.id DESC
             LIMIT ?
             """,
-            (limit,),
+            (*params, limit),
         ).fetchall()
         return [dict(row) for row in rows]
 
@@ -256,6 +335,33 @@ class WordManager:
                     ]
                 )
         return len(rows)
+
+    def get_weak_review_word(self) -> Optional[Dict[str, object]]:
+        """Return the most frequently missed word that has not been shown recently."""
+        recent_filter = ""
+        params: List[int] = []
+        if self.recent_word_ids:
+            placeholders = ",".join("?" for _ in self.recent_word_ids)
+            recent_filter = f"AND v.id NOT IN ({placeholders})"
+            params = self.recent_word_ids
+
+        query = f"""
+            SELECT v.id, v.word, v.phonetic, v.meaning, v.example, v.level,
+                   MAX(lr.reviewed_at) AS last_reviewed_at,
+                   SUM(CASE WHEN lr.result = 'remembered' THEN 1 ELSE 0 END) AS remembered_count,
+                   SUM(CASE WHEN lr.result = 'again' THEN 1 ELSE 0 END) AS again_count,
+                   MAX(CASE WHEN lr.result = 'again' THEN lr.reviewed_at ELSE NULL END) AS last_again_at
+            FROM vocabulary v
+            JOIN learning_record lr ON lr.word_id = v.id
+            WHERE 1 = 1
+              {recent_filter}
+            GROUP BY v.id
+            HAVING SUM(CASE WHEN lr.result = 'again' THEN 1 ELSE 0 END) > 0
+            ORDER BY again_count DESC, last_reviewed_at ASC, v.id ASC
+            LIMIT 1
+        """
+        row = self.connection.execute(query, params).fetchone()
+        return self._row_to_word(row)
 
     def reset_learning_records(self) -> None:
         """Delete local learning progress while keeping imported vocabulary."""
@@ -310,6 +416,19 @@ class WordManager:
         self.connection.execute(
             f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}"
         )
+
+    @staticmethod
+    def _build_search_clause(query: str, columns: List[str]) -> tuple[str, List[str]]:
+        """Build a case-insensitive LIKE clause for multiple text columns."""
+        term = query.strip().lower()
+        if not term:
+            return "", []
+
+        pattern = f"%{term}%"
+        clause = " AND (" + " OR ".join(
+            f"LOWER(COALESCE({column}, '')) LIKE ?" for column in columns
+        ) + ")"
+        return clause, [pattern] * len(columns)
 
     def _get_new_word(self) -> Optional[Dict[str, object]]:
         """Return an unstudied word, excluding very recent reminders."""

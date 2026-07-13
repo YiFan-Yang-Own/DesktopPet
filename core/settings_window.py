@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import shutil
+import zipfile
+from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
@@ -93,6 +95,10 @@ class SettingsWindow(QDialog):
         self.quiet_end_edit = self._time_edit(str(self.config_manager.get("quiet_hours.end", "08:00")))
         self.quiet_start_edit.setFixedWidth(150)
         self.quiet_end_edit.setFixedWidth(150)
+        self.backup_hint_label = QLabel(
+            "备份会包含本地配置、学习记录、导入词库和本地桌宠图片。"
+        )
+        self.backup_hint_label.setWordWrap(True)
         self._build_ui()
         self._update_interval_label()
 
@@ -133,6 +139,9 @@ class SettingsWindow(QDialog):
             QCheckBox {
                 spacing: 8px;
                 color: #374151;
+            }
+            QLabel#BackupHint {
+                color: #64748b;
             }
             QCheckBox::indicator {
                 width: 16px;
@@ -215,6 +224,26 @@ class SettingsWindow(QDialog):
         quiet_form.addRow("结束时间", self.quiet_end_edit)
         root.addWidget(quiet_group)
 
+        data_group = QGroupBox("数据")
+        data_form = QFormLayout(data_group)
+        data_form.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        data_form.setHorizontalSpacing(14)
+        data_form.setVerticalSpacing(10)
+        self.backup_hint_label.setObjectName("BackupHint")
+        backup_row = QHBoxLayout()
+        backup_button = QPushButton("备份数据")
+        backup_button.setObjectName("Secondary")
+        backup_button.clicked.connect(self._backup_data)
+        restore_button = QPushButton("恢复数据")
+        restore_button.setObjectName("Secondary")
+        restore_button.clicked.connect(self._restore_data)
+        backup_row.addWidget(backup_button)
+        backup_row.addWidget(restore_button)
+        backup_row.addStretch(1)
+        data_form.addRow("", self.backup_hint_label)
+        data_form.addRow("数据备份", backup_row)
+        root.addWidget(data_group)
+
         buttons = QHBoxLayout()
         buttons.addStretch(1)
         cancel_button = QPushButton("取消")
@@ -283,6 +312,133 @@ class SettingsWindow(QDialog):
         if removed:
             self._update_pet_asset_label()
             self.on_apply()
+
+    def _backup_data(self) -> None:
+        """Export local configuration, learning data, and custom assets into a zip file."""
+        default_name = f"desktoppet-backup-{datetime.now():%Y%m%d-%H%M%S}.zip"
+        file_name, _ = QFileDialog.getSaveFileName(
+            self,
+            "备份数据",
+            str(Path.home() / default_name),
+            "Zip Files (*.zip)",
+        )
+        if not file_name:
+            return
+
+        backup_path = Path(file_name)
+        if backup_path.suffix.lower() != ".zip":
+            backup_path = backup_path.with_suffix(".zip")
+
+        try:
+            count = self._write_backup_archive(backup_path)
+        except OSError as exc:
+            QMessageBox.critical(self, "DesktopPet", f"备份失败：{exc}")
+            return
+
+        QMessageBox.information(
+            self,
+            "DesktopPet",
+            f"已备份 {count} 个文件到：{backup_path}",
+        )
+
+    def _restore_data(self) -> None:
+        """Import local configuration, learning data, and custom assets from a zip file."""
+        file_name, _ = QFileDialog.getOpenFileName(
+            self,
+            "恢复数据",
+            str(Path.home()),
+            "Zip Files (*.zip)",
+        )
+        if not file_name:
+            return
+
+        archive_path = Path(file_name)
+        try:
+            restored_count = self._restore_backup_archive(archive_path)
+        except (OSError, ValueError, zipfile.BadZipFile) as exc:
+            QMessageBox.critical(self, "DesktopPet", f"恢复失败：{exc}")
+            return
+
+        QMessageBox.information(
+            self,
+            "DesktopPet",
+            "已恢复 "
+            f"{restored_count} 个文件。请重启程序以重新加载配置和学习记录。",
+        )
+
+    def _write_backup_archive(self, backup_path: Path) -> int:
+        """Write a zip archive with all local user data files."""
+        entries = self._backup_entries()
+        backup_path.parent.mkdir(parents=True, exist_ok=True)
+        written = 0
+        with zipfile.ZipFile(backup_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for source, arcname in entries:
+                if source.exists():
+                    archive.write(source, arcname)
+                    written += 1
+        return written
+
+    def _restore_backup_archive(self, archive_path: Path) -> int:
+        """Restore a zip archive into the project workspace."""
+        restored = 0
+        allowed_roots = {
+            "config.local.yaml",
+            "data/user_data.db",
+            "data/wordlib/",
+            "resources/pets/",
+        }
+
+        with zipfile.ZipFile(archive_path, "r") as archive:
+            for member in archive.infolist():
+                if member.is_dir():
+                    continue
+                member_name = Path(member.filename).as_posix()
+                if not self._is_allowed_backup_member(member_name, allowed_roots):
+                    continue
+
+                target = self.base_dir / Path(member_name)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with archive.open(member, "r") as source, target.open("wb") as destination:
+                    shutil.copyfileobj(source, destination)
+                restored += 1
+
+        if restored == 0:
+            raise ValueError("备份包里没有可恢复的数据文件")
+        return restored
+
+    def _backup_entries(self) -> list[tuple[Path, str]]:
+        """Return the files that should be included in a backup archive."""
+        entries: list[tuple[Path, str]] = [
+            (self.base_dir / "config.local.yaml", "config.local.yaml"),
+            (self.base_dir / "data" / "user_data.db", "data/user_data.db"),
+        ]
+
+        wordlib_dir = self.base_dir / "data" / "wordlib"
+        for path in sorted(wordlib_dir.glob("custom_*.json")):
+            entries.append((path, f"data/wordlib/{path.name}"))
+
+        pet_dir = self.base_dir / "resources" / "pets"
+        for image_name in (
+            "local_pet.gif",
+            "local_pet.png",
+            "local_pet.jpg",
+            "local_pet.jpeg",
+        ):
+            path = pet_dir / image_name
+            entries.append((path, f"resources/pets/{image_name}"))
+
+        return entries
+
+    @staticmethod
+    def _is_allowed_backup_member(member_name: str, allowed_roots: set[str]) -> bool:
+        """Limit restore extraction to the known user-data paths."""
+        path = Path(member_name)
+        if path.is_absolute() or ".." in path.parts:
+            return False
+        normalized = path.as_posix()
+        if normalized in allowed_roots:
+            return True
+        return any(normalized.startswith(prefix) for prefix in allowed_roots if prefix.endswith("/"))
 
     def _edit_interval(self) -> None:
         """Open the wheel-style interval dialog."""

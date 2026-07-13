@@ -65,6 +65,9 @@ class TrayManager:
         self.review_now_action = QAction("立即复习", self.menu)
         self.review_now_action.triggered.connect(self.scheduler.trigger_reminder)
 
+        self.review_weak_action = QAction("复习错词", self.menu)
+        self.review_weak_action.triggered.connect(self.scheduler.show_weak_word)
+
         self.stats_action = QAction("学习记录", self.menu)
         self.stats_action.triggered.connect(self.stats_window.show_and_refresh)
 
@@ -115,6 +118,7 @@ class TrayManager:
         self.menu.addSeparator()
         self.menu.addAction(self.pause_action)
         self.menu.addAction(self.review_now_action)
+        self.menu.addAction(self.review_weak_action)
         self.menu.addAction(self.stats_action)
         self.menu.addAction(self.settings_action)
         self.menu.addAction(self.reset_position_action)
